@@ -46,7 +46,7 @@ const Registration = () => {
   const fetchStatus = async () => {
     setStatusLoading(true);
     try {
-      const response = await fetch('http://localhost:3001/api/membership/status', {
+      const response = await fetch('/api/membership/status', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {
@@ -106,7 +106,7 @@ const Registration = () => {
     setMessage(null);
 
     try {
-      const response = await fetch('http://localhost:3001/api/membership', {
+      const response = await fetch('/api/membership', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',

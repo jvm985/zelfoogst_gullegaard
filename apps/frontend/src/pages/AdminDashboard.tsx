@@ -62,7 +62,7 @@ const AdminDashboard = () => {
   const fetchCrops = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:3001/api/crops', {
+      const response = await fetch('/api/crops', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {
@@ -79,7 +79,7 @@ const AdminDashboard = () => {
   const fetchMembers = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:3001/api/admin/members', {
+      const response = await fetch('/api/admin/members', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {
@@ -96,7 +96,7 @@ const AdminDashboard = () => {
   const deleteMember = async (id: string) => {
     if (!window.confirm('Weet je zeker dat je dit lid en alle bijbehorende gegevens wilt verwijderen?')) return;
     try {
-      const response = await fetch(`http://localhost:3001/api/admin/members/${id}`, {
+      const response = await fetch(`/api/admin/members/${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -123,7 +123,7 @@ const AdminDashboard = () => {
         const member = members.find(m => m.id === memberId);
         if(!member) return;
 
-        await fetch(`http://localhost:3001/api/admin/members/${memberId}/payment`, {
+        await fetch(`/api/admin/members/${memberId}/payment`, {
             method: 'PATCH',
             headers: {
                 'Content-Type': 'application/json',
@@ -143,7 +143,7 @@ const AdminDashboard = () => {
         const member = members.find(m => m.id === memberId);
         if(!member) return;
 
-        await fetch(`http://localhost:3001/api/admin/members/${memberId}/membership`, {
+        await fetch(`/api/admin/members/${memberId}/membership`, {
             method: 'PATCH',
             headers: {
                 'Content-Type': 'application/json',
@@ -180,8 +180,8 @@ const AdminDashboard = () => {
   const handleSaveCrop = async (e: React.FormEvent) => {
     e.preventDefault();
     const url = editingCrop 
-      ? `http://localhost:3001/api/crops/${editingCrop.id}`
-      : 'http://localhost:3001/api/crops';
+      ? `/api/crops/${editingCrop.id}`
+      : '/api/crops';
     
     const method = editingCrop ? 'PATCH' : 'POST';
 
@@ -205,7 +205,7 @@ const AdminDashboard = () => {
 
   const toggleCropHarvestable = async (crop: Crop) => {
     try {
-      const response = await fetch(`http://localhost:3001/api/crops/${crop.id}`, {
+      const response = await fetch(`/api/crops/${crop.id}`, {
         method: 'PATCH',
         headers: { 
             'Content-Type': 'application/json',
@@ -224,7 +224,7 @@ const AdminDashboard = () => {
   const deleteCrop = async (id: string) => {
     if (!window.confirm('Weet je zeker dat je dit gewas wilt verwijderen?')) return;
     try {
-      const response = await fetch(`http://localhost:3001/api/crops/${id}`, {
+      const response = await fetch(`/api/crops/${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -244,7 +244,7 @@ const AdminDashboard = () => {
       }
       setSendingNewsletter(true);
       try {
-          const response = await fetch('http://localhost:3001/api/newsletter', {
+          const response = await fetch('/api/newsletter', {
               method: 'POST',
               headers: { 
                   'Content-Type': 'application/json',

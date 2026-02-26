@@ -31,7 +31,8 @@ git add .
 
 # 4. Commit the changes
 echo "💾 Committing changes..."
-git commit -m "Initial commit: Complete functional app for De Gullegaard" || echo "⚠️ Nothing to commit"
+COMMIT_MESSAGE=${1:-"Update: Functional changes for De Gullegaard"}
+git commit -m "$COMMIT_MESSAGE" || echo "⚠️ Nothing to commit"
 
 # 5. Push to GitHub
 echo "📤 Pushing to GitHub (main branch)..."

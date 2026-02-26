@@ -25,7 +25,7 @@ const CompleteSignup = () => {
 
     const verifyToken = async () => {
       try {
-        const response = await fetch('http://localhost:3001/api/auth/verify-signup-token', {
+        const response = await fetch('/api/auth/verify-signup-token', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ token }),
@@ -61,7 +61,7 @@ const CompleteSignup = () => {
     setError('');
 
     try {
-      const response = await fetch('http://localhost:3001/api/auth/complete-signup', {
+      const response = await fetch('/api/auth/complete-signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token, password }),

@@ -1,0 +1,53 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: gullegaard-db
+    restart: always
+    environment:
+      POSTGRES_DB: gullegaard
+      POSTGRES_USER: joachim
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - gullegaard-network
+
+  backend:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
+    container_name: gullegaard-backend
+    restart: always
+    environment:
+      DATABASE_URL: postgresql://joachim:${DB_PASSWORD:-password}@db:5432/gullegaard?schema=public
+      PORT: 3001
+      JWT_SECRET: ${JWT_SECRET:-supersecret}
+      # Email settings (add as env vars in .env file)
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASS: ${SMTP_PASS}
+    depends_on:
+      - db
+    networks:
+      - gullegaard-network
+
+  frontend:
+    build:
+      context: .
+      dockerfile: apps/frontend/Dockerfile
+    container_name: gullegaard-frontend
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - gullegaard-network
+
+networks:
+  gullegaard-network:
+    driver: bridge
+
+volumes:
+  postgres_data:

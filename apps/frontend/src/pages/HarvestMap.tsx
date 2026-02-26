@@ -19,7 +19,7 @@ const HarvestMap = () => {
   useEffect(() => {
     const fetchCrops = async () => {
       try {
-        const response = await fetch('http://localhost:3001/api/crops', {
+        const response = await fetch('/api/crops', {
           headers: {
             'Authorization': token ? `Bearer ${token}` : ''
           }

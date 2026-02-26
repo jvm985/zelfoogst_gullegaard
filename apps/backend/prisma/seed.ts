@@ -37,13 +37,13 @@ async function main() {
 
   console.log('Seeding crops...');
   const cropsData = [
-    { name: 'Wortelen', description: 'Sappige oranje wortelen', isHarvestable: true, fieldLocation: 'A1' },
-    { name: 'Kropsla', description: 'Malse groene kropsla', isHarvestable: true, fieldLocation: 'A2' },
-    { name: 'Bloemkool', description: 'Witte bloemkool in wording', isHarvestable: false, fieldLocation: 'A3' },
-    { name: 'Aardappelen', description: 'Vroege Nicola aardappelen', isHarvestable: true, fieldLocation: 'B1' },
-    { name: 'Prei', description: 'Wintervaste prei', isHarvestable: true, fieldLocation: 'B2' },
-    { name: 'Rode Bieten', description: 'Rode bieten voor salades', isHarvestable: false, fieldLocation: 'B3' },
-    { name: 'Spinazie', description: 'Frisse jonge spinazie', isHarvestable: true, fieldLocation: 'C1' },
+    { name: 'Wortelen', description: 'Sappige oranje wortelen', isHarvestable: true, fieldLocation: 'Blok 1' },
+    { name: 'Kropsla', description: 'Malse groene kropsla', isHarvestable: true, fieldLocation: 'Blok 2' },
+    { name: 'Bloemkool', description: 'Witte bloemkool in wording', isHarvestable: false, fieldLocation: 'Blok 3' },
+    { name: 'Aardappelen', description: 'Vroege Nicola aardappelen', isHarvestable: true, fieldLocation: 'Blok 4' },
+    { name: 'Prei', description: 'Wintervaste prei', isHarvestable: true, fieldLocation: 'Blok 5' },
+    { name: 'Rode Bieten', description: 'Rode bieten voor salades', isHarvestable: false, fieldLocation: 'Blok 6' },
+    { name: 'Spinazie', description: 'Frisse jonge spinazie', isHarvestable: true, fieldLocation: 'Tunnel 1' },
   ];
 
   const createdCrops = [];

@@ -64,8 +64,8 @@ const Recipes = () => {
   const fetchData = async () => {
     try {
       const [recipesRes, cropsRes] = await Promise.all([
-        fetch('http://localhost:3001/api/recipes/ranked'),
-        fetch('http://localhost:3001/api/crops', {
+        fetch('/api/recipes/ranked'),
+        fetch('/api/crops', {
             headers: token ? { 'Authorization': `Bearer ${token}` } : {}
         })
       ]);
@@ -96,8 +96,8 @@ const Recipes = () => {
     if (!token) return;
 
     const url = isEditMode && selectedRecipe 
-        ? `http://localhost:3001/api/recipes/${selectedRecipe.id}`
-        : 'http://localhost:3001/api/recipes';
+        ? `/api/recipes/${selectedRecipe.id}`
+        : '/api/recipes';
     
     const method = isEditMode ? 'PATCH' : 'POST';
 
@@ -128,7 +128,7 @@ const Recipes = () => {
   const handleDeleteRecipe = async (id: string) => {
       if (!window.confirm('Weet je zeker dat je dit recept wilt verwijderen?')) return;
       try {
-          const response = await fetch(`http://localhost:3001/api/recipes/${id}`, {
+          const response = await fetch(`/api/recipes/${id}`, {
               method: 'DELETE',
               headers: { 'Authorization': `Bearer ${token}` }
           });
