@@ -1,0 +1,46 @@
+- een app voor een boerderij de gullegaard met deelnemers
+- een frontend: een website met info en foto's voor de deelnemers
+- een backend, waar de boer zijn data kan beheren
+- hier gaat nog veel bijkomen, dus maakt het heel robuust en uitbreidbaar
+- maak een voorlopige webbsite met alle pagina's, zet op die pagina's wat dummy tekst
+
+A) frontend - open voor iedereen
+
+pggina met info over de boerderij
+pggina met contactinfo
+pagina om in te loggen met een email en paswoord, en "paswoord vergeten optie" via email, ook mogelijkheid om account aan te maken. dit moet als volgt: geef naam en emailadres, dan ontvang je een bevestiginsmail met een link om je account aan te maken. wanneer je daar op klikt, moet je beginnen met je wachtwoord in te stellen (2x vragen). zorg dat de emails effectief verstuurd worden.
+
+B frontend - open voor deelnemers
+
+
+pagina om in te schrijven voor een oogstjaar, en zo deelnemer te worden aan de oogst. deze pagina is enkel te zien door wie is ingelogd op de website, met zijn email-adres. Je hoeft dus voor het deelnemen aan de oogst geen contactgegevens meer te vragen. op deze pagina geeft de gebruiker aan met hoeveel volwassenen en hoeveel kinderen hij wil inschrijven. de kostprijs is als volgt: 
+
+    405 € de minimumprijs, voorbehouden voor deelnemers die het financieel niet zo breed hebben.
+    435 € de richtprijs (of wat we gemiddeld per deelnemer nodig hebben om rendabel te kunnen werken, met een eerlijk loon voor de boer).
+    480 € heeft jouw gezin een hoog of zeer hoog inkomen? Dan kies je voor dit bedrag.
+    kind = 20€ x leeftijd
+dus je moet een formulier maken waarop zowel volwassenen als kinderen kunnen worden vermeld. de totale prijs moet meteen zichtbaar zijn
+wanneer een gebruiker zich reeds heeft ingeschreven voor de oogst, moet hij op deze pagina de melding krijgen 'u bent reeds ingeschreven', vermeld ook of het al betaald is of niet. wanneer nog niet betaald, mag de gebruiker zijn inschrijving nog aanpassen.
+
+
+
+pagina met wat er nu te oogsten is op het veld, en waar op het veld zich dat bevindt, dit moet dus een visuele voorstelling geven van het veld met daarop de gewassen die klaar zijn. je moet alle gewassen die oogsklaar zijn in het vak tonen. de indeling van het veld is zo: bovenaan het veld zet je: straatkant (want daar is de straat).  dan 3 rijen en 4 kolommen. 
+eerste rij= bloemen, 1,2 en 3. tweede rij: tunnels, 4, 5 en 6. derde rij: tunnel 1, tunnel 2, tunnel 3, tunnel 4. dat zijn meteen de 12 vaknamen.
+
+
+
+pagina waar gebruikers kookrecepten kunnen toevoegen. de ingrediënten moeten op een manier verbonden zijn met de gewassen van de boer, zodat je exact kan bepalen welke recepten met nu te oogsten gewassen kunnen worden gemaakt. misschien best een onderscheid maken tussen "oogstbare ingrediënten" (een slectielijst van de gewassen) en niet-oogstbare ingrediënten. er gaan wel een 80-tal oogstbare gewassen komen, dus maak een handige selectietool. misschien een dropdown, met bovenaan een filtervak zodat je enkel de options krijgt die voldoen aan de filter. als een gebruiker op zijn eigen recept klikt, moet hij de optie zien om het te wijzigen
+
+pagina met welke recepten je kan koken met wat er nu te oogsten is, de recepten met de meeste ingrediënten die nu oogstbaar zijn, moeten bovenaan staan. ook een zoek/filterfunctie voorzien.
+
+C)backend
+enkel voor admin login
+pagina waar de boer kan aanvinken welke gewassen oogstklaar zijn, en waar ze staan
+pagina waar de boer gewassen kan beheren (toevoegen, verwijderen, wijzigen). Vak-locatie via dropdown van bestaande vakken. 
+
+pagina waar de boer een nieuwsbrief kan schrijven, die dan verstuurd wordt naar alle gebruikers
+pagina waar beheerder de deelnemers kan beheren, hun profielen en info kan zien, kan bijhouden of ze al lidgeld hebben, kan zien of ze deelnemer zijn geworden van de oogst, en hun totaal inschrijvingsgeld, plus gezinssamenstelling, ook hen kunnen verwijderen
+
+
+voorzie op alle pagina's wat test data
+voor database gebruik je postgres. db is gullegaard, user is joachim

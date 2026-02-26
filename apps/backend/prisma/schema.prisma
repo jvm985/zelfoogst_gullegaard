@@ -1,0 +1,91 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum MembershipTier {
+  MINIMUM
+  STANDARD
+  HIGH
+}
+
+model User {
+  id                      String       @id @default(cuid())
+  email                   String       @unique
+  password                String?
+  name                    String?
+  role                    Role         @default(USER)
+  isVerified              Boolean      @default(false)
+  verificationToken       String?
+  verificationTokenExpiry DateTime?
+  resetToken              String?
+  resetTokenExpiry        DateTime?
+  createdAt               DateTime     @default(now())
+  updatedAt               DateTime     @updatedAt
+  memberships             Membership[]
+  recipes                 Recipe[]
+}
+
+model Membership {
+  id            String         @id @default(cuid())
+  year          Int
+  userId        String
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  totalFee      Float
+  isPaid        Boolean        @default(false)
+  familyMembers FamilyMember[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@unique([userId, year])
+}
+
+model FamilyMember {
+  id           String          @id @default(cuid())
+  membershipId String
+  membership   Membership      @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  type         String // "ADULT" or "CHILD"
+  tier         MembershipTier? // Only for adults
+  age          Int? // Only for children
+  price        Float
+}
+
+model Crop {
+  id            String   @id @default(cuid())
+  name          String
+  description   String?
+  isHarvestable Boolean  @default(false)
+  fieldLocation String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  recipes       Recipe[] @relation("RecipeCrops")
+}
+
+model Recipe {
+  id               String   @id @default(cuid())
+  title            String
+  content          String
+  harvestableCrops Crop[]   @relation("RecipeCrops")
+  otherIngredients String // Text for non-harvestable ingredients
+  authorId         String
+  author           User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model Newsletter {
+  id        String    @id @default(cuid())
+  subject   String
+  body      String
+  sentAt    DateTime?
+  createdAt DateTime  @default(now())
+}
