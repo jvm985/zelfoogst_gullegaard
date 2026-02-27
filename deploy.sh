@@ -42,7 +42,7 @@ done
 
 echo "💾 Running Prisma migrations..."
 # Use npx prisma to handle the correct executable path automatically
-docker compose run --rm backend npx prisma migrate deploy --schema prisma/schema.prisma || {
+docker compose run --rm backend npx prisma migrate deploy --schema ./prisma/schema.prisma || {
     echo "❌ Migration failed! Printing backend logs..."
     docker compose logs backend --tail 50
     exit 1
