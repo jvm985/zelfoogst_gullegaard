@@ -40,9 +40,9 @@ while ! docker compose exec -T db pg_isready -U joachim > /dev/null 2>&1; do
   fi
 done
 
-echo "💾 Running Prisma migrations..."
-# Voer de migraties uit
-docker compose run --rm backend npx prisma migrate deploy
+echo "💾 Syncing database schema..."
+# Gebruik db push voor de eerste setup (wanneer er geen migratie-bestanden zijn)
+docker compose run --rm backend npx prisma db push --accept-data-loss
 
 echo "🌱 Seeding database..."
 # Voer de seed uit om de beheerder en gewassen aan te maken
