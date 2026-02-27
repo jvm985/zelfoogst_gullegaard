@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Users, Sprout, Send, Edit2, Trash2, Eye, CheckCircle, XCircle, Euro, Baby, User, X, Plus, MapPin, AlignLeft, ChevronDown } from 'lucide-react';
+import { Settings, Users, Sprout, Send, Edit2, Trash2, Eye, CheckCircle, XCircle, Euro, Baby, User, X, Plus, MapPin, AlignLeft, ChevronDown, Calendar } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 interface Crop {
@@ -31,12 +31,24 @@ const FIELD_LOCATIONS = [
   "Tunnel 1", "Tunnel 2", "Tunnel 3", "Tunnel 4"
 ];
 
+interface NewsPost {
+  id: string;
+  title: string;
+  content: string;
+  createdAt: string;
+}
+
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('crops');
   const [crops, setCrops] = useState<Crop[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
+  const [news, setNews] = useState<NewsPost[]>([]);
   const [loading, setLoading] = useState(true);
   
+  // News management state
+  const [newsForm, setNewsForm] = useState({ title: '', content: '', imageUrl: '' });
+  const [savingNews, setSavingNews] = useState(false);
+
   // Crop management state
   const [showCropForm, setShowCropForm] = useState(false);
   const [editingCrop, setEditingCrop] = useState<Crop | null>(null);
@@ -57,7 +69,62 @@ const AdminDashboard = () => {
   useEffect(() => {
     if (activeTab === 'crops') fetchCrops();
     if (activeTab === 'members') fetchMembers();
+    if (activeTab === 'news') fetchNews();
   }, [activeTab, token]);
+
+  const fetchNews = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/news');
+      if (response.ok) {
+        const data = await response.json();
+        setNews(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch news:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSaveNews = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newsForm.title || !newsForm.content) return;
+    setSavingNews(true);
+    try {
+      const response = await fetch('/api/news', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(newsForm),
+      });
+      if (response.ok) {
+        setNewsForm({ title: '', content: '', imageUrl: '' });
+        fetchNews();
+      }
+    } catch (error) {
+      console.error('Failed to save news:', error);
+    } finally {
+      setSavingNews(false);
+    }
+  };
+
+  const deleteNewsPost = async (id: string) => {
+    if (!window.confirm('Weet je zeker dat je dit nieuwsbericht wilt verwijderen?')) return;
+    try {
+      const response = await fetch(`/api/news/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        fetchNews();
+      }
+    } catch (error) {
+      console.error('Failed to delete news post:', error);
+    }
+  };
 
   const fetchCrops = async () => {
     setLoading(true);
@@ -291,6 +358,12 @@ const AdminDashboard = () => {
           <Users size={18}/> Deelnemers
         </button>
         <button 
+          className={`px-6 py-2.5 rounded-xl font-bold transition-all flex items-center gap-2 ${activeTab === 'news' ? 'bg-green-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-800'}`}
+          onClick={() => setActiveTab('news')}
+        >
+          <Calendar size={18}/> Nieuws
+        </button>
+        <button 
           className={`px-6 py-2.5 rounded-xl font-bold transition-all flex items-center gap-2 ${activeTab === 'newsletter' ? 'bg-green-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-800'}`}
           onClick={() => setActiveTab('newsletter')}
         >
@@ -444,6 +517,69 @@ const AdminDashboard = () => {
                 </table>
               </div>
             )}
+          </div>
+        )}
+
+        {activeTab === 'news' && (
+          <div className="p-8 animate-in fade-in duration-500">
+            <h2 className="text-2xl font-black text-slate-900 mb-8">Nieuwsberichten Beheren</h2>
+            
+            <form onSubmit={handleSaveNews} className="mb-12 bg-slate-50 p-8 rounded-2xl border border-slate-200 space-y-6">
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-slate-500 ml-1">Titel</label>
+                <input 
+                  type="text" required
+                  className="w-full bg-white border border-slate-200 text-slate-900 rounded-xl p-4 focus:ring-2 focus:ring-green-500 outline-none" 
+                  placeholder="Bijv: Nieuwe inschrijvingen mogelijk!" 
+                  value={newsForm.title}
+                  onChange={(e) => setNewsForm({...newsForm, title: e.target.value})}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-slate-500 ml-1">Afbeelding URL (optioneel)</label>
+                <input 
+                  type="text"
+                  className="w-full bg-white border border-slate-200 text-slate-900 rounded-xl p-4 focus:ring-2 focus:ring-green-500 outline-none" 
+                  placeholder="https://images.unsplash.com/..." 
+                  value={newsForm.imageUrl}
+                  onChange={(e) => setNewsForm({...newsForm, imageUrl: e.target.value})}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-bold text-slate-500 ml-1">Bericht</label>
+                <textarea 
+                  required
+                  className="w-full bg-white border border-slate-200 text-slate-900 rounded-xl p-4 h-32 focus:ring-2 focus:ring-green-500 outline-none" 
+                  placeholder="Wat is het nieuws?"
+                  value={newsForm.content}
+                  onChange={(e) => setNewsForm({...newsForm, content: e.target.value})}
+                ></textarea>
+              </div>
+              <button 
+                type="submit"
+                disabled={savingNews}
+                className="bg-green-600 text-white px-8 py-3 rounded-xl font-black hover:bg-green-700 shadow-lg transition-all uppercase tracking-tight disabled:opacity-50"
+              >
+                {savingNews ? 'Opslaan...' : 'Bericht Plaatsen'}
+              </button>
+            </form>
+
+            <div className="space-y-4">
+              {news.map(post => (
+                <div key={post.id} className="flex justify-between items-center p-6 bg-white border border-slate-100 rounded-2xl shadow-sm group">
+                  <div>
+                    <h3 className="font-bold text-slate-900">{post.title}</h3>
+                    <p className="text-xs text-slate-400">{new Date(post.createdAt).toLocaleDateString('nl-NL')}</p>
+                  </div>
+                  <button 
+                    onClick={() => deleteNewsPost(post.id)}
+                    className="p-2 text-slate-300 hover:text-red-600 transition-colors"
+                  >
+                    <Trash2 size={20} />
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 

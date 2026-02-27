@@ -89,3 +89,12 @@ model Newsletter {
   sentAt    DateTime?
   createdAt DateTime  @default(now())
 }
+
+model NewsPost {
+  id        String   @id @default(cuid())
+  title     String
+  content   String
+  imageUrl  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

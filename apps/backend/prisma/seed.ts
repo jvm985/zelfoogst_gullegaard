@@ -82,6 +82,24 @@ async function main() {
     },
   });
 
+  console.log('Seeding news posts...');
+  await prisma.newsPost.createMany({
+    data: [
+      {
+        title: 'Nieuwe inschrijvingen mogelijk op GulleGaard!',
+        content: 'De inschrijvingen voor het nieuwe oogstseizoen 2026 zijn officieel geopend! Kom langs op een van onze infomomenten om meer te horen over ons verhaal en hoe je lid kunt worden.',
+      },
+      {
+        title: 'Infomomenten 2026 komen eraan!',
+        content: 'Wil je meer weten over zelfoogst op GulleGaard? We organiseren binnenkort verschillende informatiesessies op het veld. Houd de kalender in de gaten voor de exacte data.',
+      },
+      {
+        title: 'Winterontmoeting op 31/1/26',
+        content: 'We nodigen al onze (toekomstige) leden uit voor een warme winterontmoeting op het veld. Een ideaal moment om kennis te maken met de boer en de andere deelnemers bij een kop warme soep.',
+      }
+    ]
+  });
+
   console.log('Seeding complete.');
 }
 

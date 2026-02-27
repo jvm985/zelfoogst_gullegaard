@@ -581,6 +581,40 @@ app.post('/api/newsletter', authenticateToken, isAdmin, async (req, res) => {
     }
 });
 
+// --- News Posts ---
+app.get('/api/news', async (req, res) => {
+    try {
+        const news = await prisma.newsPost.findMany({
+            orderBy: { createdAt: 'desc' }
+        });
+        res.json(news);
+    } catch (error) {
+        res.status(500).json({ error: 'Kon nieuwsberichten niet ophalen' });
+    }
+});
+
+app.post('/api/news', authenticateToken, isAdmin, async (req, res) => {
+    try {
+        const { title, content, imageUrl } = req.body;
+        const post = await prisma.newsPost.create({
+            data: { title, content, imageUrl }
+        });
+        res.status(201).json(post);
+    } catch (error) {
+        res.status(500).json({ error: 'Kon nieuwsbericht niet opslaan' });
+    }
+});
+
+app.delete('/api/news/:id', authenticateToken, isAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        await prisma.newsPost.delete({ where: { id } });
+        res.status(204).send();
+    } catch (error) {
+        res.status(500).json({ error: 'Kon nieuwsbericht niet verwijderen' });
+    }
+});
+
 app.listen(port, () => {
   console.log(`Backend server running on http://localhost:${port}`);
 });
