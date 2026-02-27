@@ -26,12 +26,14 @@ fi
 echo "🐳 Rebuilding and starting Docker containers..."
 docker compose up --build -d
 
-# 3. Database Migrations (wait for db to be ready, then run)
-echo "⏳ Waiting for database to be ready..."
-sleep 5 # Simple wait, or use pg_isready if needed
-
+# 3. Database Migrations
 echo "💾 Running Prisma migrations..."
-docker compose exec backend ./node_modules/.bin/prisma migrate deploy --schema apps/backend/prisma/schema.prisma
+# We gebruiken 'run' in plaats van 'exec' zodat het ook werkt als de hoofd-container nog opstart
+docker compose run --rm backend ./node_modules/.bin/prisma migrate deploy --schema apps/backend/prisma/schema.prisma || {
+    echo "❌ Migration failed! Printing backend logs..."
+    docker compose logs backend --tail 50
+    exit 1
+}
 
 # 4. Success message
 echo "✨ Deployment successful! The app is now live."
