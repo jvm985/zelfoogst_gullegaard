@@ -1,6 +1,6 @@
 import React from 'react';
-import { Link, Outlet, useNavigate } from 'react-router-dom';
-import { Users, Map as MapIcon, BookOpen, Settings, Phone, Info, LogIn, LogOut, User } from 'lucide-react';
+import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { Users, Map as MapIcon, BookOpen, Settings, Phone, Info, LogIn, LogOut, User, Home as HomeIcon } from 'lucide-react';
 import logo from '../assets/logo.png';
 import { useAuth } from '../context/AuthContext';
 
@@ -23,11 +23,24 @@ const MainLayout: React.FC = () => {
           </Link>
           
           <nav className="hidden lg:flex gap-6 items-center">
-            <Link to="/over-ons" className="text-slate-600 hover:text-green-600 flex items-center gap-1 font-medium transition-colors"><Info size={18}/> Info</Link>
-            <Link to="/contact" className="text-slate-600 hover:text-green-600 flex items-center gap-1 font-medium transition-colors"><Phone size={18}/> Contact</Link>
-            <Link to="/oogst" className="text-slate-600 hover:text-green-600 flex items-center gap-1 font-medium transition-colors"><MapIcon size={18}/> Oogst</Link>
-            <Link to="/recepten" className="text-slate-600 hover:text-green-600 flex items-center gap-1 font-medium transition-colors"><BookOpen size={18}/> Recepten</Link>
-            <Link to="/inschrijven" className="text-slate-600 hover:text-green-600 flex items-center gap-1 font-medium transition-colors"><Users size={18}/> Inschrijven</Link>
+            <NavLink to="/" className={({ isActive }) => `flex items-center gap-1 font-medium transition-colors ${isActive ? 'text-green-700 font-bold' : 'text-slate-600 hover:text-green-600'}`}>
+              <HomeIcon size={18}/> Home
+            </NavLink>
+            <NavLink to="/over-ons" className={({ isActive }) => `flex items-center gap-1 font-medium transition-colors ${isActive ? 'text-green-700 font-bold' : 'text-slate-600 hover:text-green-600'}`}>
+              <Info size={18}/> Missie
+            </NavLink>
+            <NavLink to="/contact" className={({ isActive }) => `flex items-center gap-1 font-medium transition-colors ${isActive ? 'text-green-700 font-bold' : 'text-slate-600 hover:text-green-600'}`}>
+              <Phone size={18}/> Contact
+            </NavLink>
+            <NavLink to="/oogst" className={({ isActive }) => `flex items-center gap-1 font-medium transition-colors ${isActive ? 'text-green-700 font-bold' : 'text-slate-600 hover:text-green-600'}`}>
+              <MapIcon size={18}/> Oogst
+            </NavLink>
+            <NavLink to="/recepten" className={({ isActive }) => `flex items-center gap-1 font-medium transition-colors ${isActive ? 'text-green-700 font-bold' : 'text-slate-600 hover:text-green-600'}`}>
+              <BookOpen size={18}/> Recepten
+            </NavLink>
+            <NavLink to="/inschrijven" className={({ isActive }) => `flex items-center gap-1 font-medium transition-colors ${isActive ? 'text-green-700 font-bold' : 'text-slate-600 hover:text-green-600'}`}>
+              <Users size={18}/> Inschrijven
+            </NavLink>
             
             <div className="h-6 w-px bg-slate-200 ml-2"></div>
 
