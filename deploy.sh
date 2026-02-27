@@ -41,8 +41,8 @@ while ! docker compose exec -T db pg_isready -U joachim > /dev/null 2>&1; do
 done
 
 echo "💾 Running Prisma migrations..."
-# We gebruiken 'run' om migraties uit te voeren in een aparte container
-docker compose run --rm backend ./node_modules/.bin/prisma migrate deploy --schema apps/backend/prisma/schema.prisma || {
+# Use npx prisma to handle the correct executable path automatically
+docker compose run --rm backend npx prisma migrate deploy --schema prisma/schema.prisma || {
     echo "❌ Migration failed! Printing backend logs..."
     docker compose logs backend --tail 50
     exit 1

@@ -3,16 +3,15 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copy root workspace and backend files
+# Copy ALL workspace files for correct installation
 COPY package.json package-lock.json ./
 COPY apps/backend/package.json ./apps/backend/
-COPY apps/backend/tsconfig.json ./apps/backend/
 COPY apps/backend/prisma ./apps/backend/prisma
 
-# Install ALL dependencies (including root and workspace)
+# Install all dependencies (hoisting will happen here)
 RUN npm install
 
-# Copy source
+# Copy backend source
 COPY apps/backend ./apps/backend
 
 # Generate Prisma Client and build
@@ -25,12 +24,12 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Copy all node_modules and built code
+# Copy root package.json and all node_modules (including .prisma client)
 COPY --from=builder /app/package.json ./
 COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/apps/backend/package.json ./apps/backend/
+COPY --from=builder /app/apps/backend/package.json ./apps/backend/package.json
 COPY --from=builder /app/apps/backend/dist ./dist
-COPY --from=builder /app/apps/backend/prisma ./apps/backend/prisma
+COPY --from=builder /app/apps/backend/prisma ./prisma
 
 EXPOSE 3001
 
