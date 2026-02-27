@@ -70,76 +70,78 @@ const HarvestMap = () => {
             </div>
 
             {/* Field Grid */}
-            <div className="bg-white p-8 rounded-b-[2.5rem] border-x border-b border-slate-200 shadow-2xl space-y-4">
-              {fieldLayout.map((row, rowIndex) => (
-                <div key={rowIndex} className="grid grid-cols-4 gap-4">
-                  {row.cells.map(cellName => {
-                    const allCropsInCell = crops.filter(c => c.fieldLocation === cellName);
-                    const harvestableInCell = allCropsInCell.filter(c => c.isHarvestable);
-                    const hasSomeHarvestable = harvestableInCell.length > 0;
+            <div className="bg-white p-4 md:p-8 rounded-b-[2.5rem] border-x border-b border-slate-200 shadow-2xl space-y-4 overflow-x-auto">
+              <div className="min-w-[800px] md:min-w-0 space-y-4">
+                {fieldLayout.map((row, rowIndex) => (
+                  <div key={rowIndex} className="grid grid-cols-4 gap-4">
+                    {row.cells.map(cellName => {
+                      const allCropsInCell = crops.filter(c => c.fieldLocation === cellName);
+                      const harvestableInCell = allCropsInCell.filter(c => c.isHarvestable);
+                      const hasSomeHarvestable = harvestableInCell.length > 0;
 
-                    return (
-                      <div 
-                        key={cellName}
-                        onClick={() => setSelectedLocation(cellName)}
-                        className={`group relative h-48 p-5 rounded-3xl border-2 transition-all duration-300 cursor-pointer flex flex-col ${
-                          selectedLocation === cellName 
-                            ? 'ring-4 ring-green-500/20 border-green-500 bg-green-50/30' 
-                            : 'border-slate-100 hover:border-green-200 hover:bg-slate-50/50 shadow-sm'
-                        } ${
-                          allCropsInCell.length === 0 ? 'bg-slate-50/30 border-dashed border-slate-200' : 'bg-white'
-                        }`}
-                      >
-                        <div className="flex justify-between items-start mb-3">
-                          <span className={`text-[10px] font-black px-2.5 py-1 rounded-lg ${
-                            selectedLocation === cellName ? 'bg-green-500 text-white' : 'bg-slate-100 text-slate-500'
-                          }`}>
-                            {cellName}
-                          </span>
-                          {hasSomeHarvestable && (
-                            <Leaf size={16} className="text-green-500 animate-bounce" />
-                          )}
-                        </div>
-
-                        <div className="flex-grow space-y-1.5 overflow-hidden">
-                          {allCropsInCell.map(crop => (
-                            <div 
-                              key={crop.id} 
-                              className={`text-xs font-bold truncate flex items-center gap-1.5 ${
-                                crop.isHarvestable ? 'text-green-700' : 'text-slate-400'
-                              }`}
-                            >
-                              {crop.isHarvestable ? (
-                                <div className="w-1.5 h-1.5 rounded-full bg-green-500 shrink-0" />
-                              ) : (
-                                <div className="w-1.5 h-1.5 rounded-full bg-slate-200 shrink-0" />
-                              )}
-                              {crop.name}
-                            </div>
-                          ))}
-                          {allCropsInCell.length === 0 && (
-                            <div className="h-full flex items-center justify-center opacity-10">
-                              <Leaf size={24} className="text-slate-400" />
-                            </div>
-                          )}
-                        </div>
-
-                        {allCropsInCell.length > 0 && (
-                          <div className="mt-3 pt-3 border-t border-slate-100/50 flex justify-between items-center">
-                            <span className="text-[10px] font-black text-slate-400 uppercase">{harvestableInCell.length} klaar</span>
-                            <div className="h-1 w-12 bg-slate-100 rounded-full overflow-hidden">
-                                <div 
-                                    className="h-full bg-green-500" 
-                                    style={{ width: `${(harvestableInCell.length / allCropsInCell.length) * 100}%` }}
-                                />
-                            </div>
+                      return (
+                        <div 
+                          key={cellName}
+                          onClick={() => setSelectedLocation(cellName)}
+                          className={`group relative h-48 p-5 rounded-3xl border-2 transition-all duration-300 cursor-pointer flex flex-col ${
+                            selectedLocation === cellName 
+                              ? 'ring-4 ring-green-500/20 border-green-500 bg-green-50/30' 
+                              : 'border-slate-100 hover:border-green-200 hover:bg-slate-50/50 shadow-sm'
+                          } ${
+                            allCropsInCell.length === 0 ? 'bg-slate-50/30 border-dashed border-slate-200' : 'bg-white'
+                          }`}
+                        >
+                          <div className="flex justify-between items-start mb-3">
+                            <span className={`text-[10px] font-black px-2.5 py-1 rounded-lg ${
+                              selectedLocation === cellName ? 'bg-green-500 text-white' : 'bg-slate-100 text-slate-500'
+                            }`}>
+                              {cellName}
+                            </span>
+                            {hasSomeHarvestable && (
+                              <Leaf size={16} className="text-green-500 animate-bounce" />
+                            )}
                           </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              ))}
+
+                          <div className="flex-grow space-y-1.5 overflow-hidden">
+                            {allCropsInCell.map(crop => (
+                              <div 
+                                key={crop.id} 
+                                className={`text-xs font-bold truncate flex items-center gap-1.5 ${
+                                  crop.isHarvestable ? 'text-green-700' : 'text-slate-400'
+                                }`}
+                              >
+                                {crop.isHarvestable ? (
+                                  <div className="w-1.5 h-1.5 rounded-full bg-green-500 shrink-0" />
+                                ) : (
+                                  <div className="w-1.5 h-1.5 rounded-full bg-slate-200 shrink-0" />
+                                )}
+                                {crop.name}
+                              </div>
+                            ))}
+                            {allCropsInCell.length === 0 && (
+                              <div className="h-full flex items-center justify-center opacity-10">
+                                <Leaf size={24} className="text-slate-400" />
+                              </div>
+                            )}
+                          </div>
+
+                          {allCropsInCell.length > 0 && (
+                            <div className="mt-3 pt-3 border-t border-slate-100/50 flex justify-between items-center">
+                              <span className="text-[10px] font-black text-slate-400 uppercase">{harvestableInCell.length} klaar</span>
+                              <div className="h-1 w-12 bg-slate-100 rounded-full overflow-hidden">
+                                  <div 
+                                      className="h-full bg-green-500" 
+                                      style={{ width: `${(harvestableInCell.length / allCropsInCell.length) * 100}%` }}
+                                  />
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 
