@@ -31,7 +31,7 @@ echo "⏳ Waiting for database to be ready..."
 sleep 5 # Simple wait, or use pg_isready if needed
 
 echo "💾 Running Prisma migrations..."
-docker compose exec backend npx prisma migrate deploy
+docker compose exec backend ./node_modules/.bin/prisma migrate deploy --schema apps/backend/prisma/schema.prisma
 
 # 4. Success message
 echo "✨ Deployment successful! The app is now live."
