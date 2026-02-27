@@ -24,6 +24,7 @@ fi
 
 # 2. Re-build and start the containers
 echo "🐳 Rebuilding and starting Docker containers..."
+docker compose down
 docker compose up --build -d
 
 # 3. Database Migrations

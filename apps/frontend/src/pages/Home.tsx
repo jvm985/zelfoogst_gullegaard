@@ -13,12 +13,25 @@ interface NewsPost {
 
 const Home = () => {
   const [news, setNews] = useState<NewsPost[]>([]);
+  const [newsError, setNewsError] = useState<string | null>(null);
 
   useEffect(() => {
     fetch('/api/news')
-      .then(res => res.json())
-      .then(data => setNews(data.slice(0, 3)))
-      .catch(err => console.error('Failed to fetch news:', err));
+      .then(async res => {
+        if (!res.ok) {
+            const text = await res.text();
+            throw new Error(`Server error: ${res.status} - ${text}`);
+        }
+        return res.json();
+      })
+      .then(data => {
+        console.log('Front-end received news:', data);
+        setNews(Array.isArray(data) ? data.slice(0, 3) : []);
+      })
+      .catch(err => {
+        console.error('Failed to fetch news:', err);
+        setNewsError(err.message);
+      });
   }, []);
 
   return (
@@ -105,7 +118,11 @@ const Home = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {news.length > 0 ? (
+          {newsError ? (
+            <div className="col-span-3 text-center py-10 bg-red-50 rounded-2xl border border-red-100 text-red-600 font-bold">
+              Fout bij laden nieuws: {newsError}
+            </div>
+          ) : news.length > 0 ? (
             news.map(post => (
               <div key={post.id} className="bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-lg hover:shadow-2xl transition-all flex flex-col group">
                 {post.imageUrl && (
