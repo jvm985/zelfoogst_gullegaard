@@ -4,6 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "dev:backend": "npm run dev --workspace=backend",
+    "dev:frontend": "npm run dev --workspace=frontend",
+    "db:setup": "npm run db:setup --workspace=backend",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
