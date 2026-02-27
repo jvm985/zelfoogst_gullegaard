@@ -41,12 +41,12 @@ while ! docker compose exec -T db pg_isready -U joachim > /dev/null 2>&1; do
 done
 
 echo "💾 Running Prisma migrations..."
-# Use npx prisma to handle the correct executable path automatically
-docker compose run --rm backend npx prisma migrate deploy --schema ./prisma/schema.prisma || {
-    echo "❌ Migration failed! Printing backend logs..."
-    docker compose logs backend --tail 50
-    exit 1
-}
+# Voer de migraties uit
+docker compose run --rm backend npx prisma migrate deploy
+
+echo "🌱 Seeding database..."
+# Voer de seed uit om de beheerder en gewassen aan te maken
+docker compose run --rm backend npx prisma db seed || echo "⚠️ Seeding failed or already done, continuing..."
 
 # 4. Success message
 echo "✨ Deployment successful! The app is now live."
