@@ -1,4 +1,4 @@
-import { Leaf, Target, History, Heart, Users } from 'lucide-react';
+import { Target, History, Heart, Users } from 'lucide-react';
 
 const Info = () => (
   <div className="max-w-4xl mx-auto pb-20">
