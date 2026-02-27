@@ -24,9 +24,15 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-COPY --from=builder /app/apps/backend/package.json ./
-COPY --from=builder /app/apps/backend/node_modules ./node_modules
+# In a monorepo, most dependencies are in the root node_modules
+COPY --from=builder /app/package.json ./
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/apps/backend/package.json ./apps/backend/
 COPY --from=builder /app/apps/backend/dist ./dist
+
+# Generate prisma client again in production to ensure it's available
+COPY --from=builder /app/apps/backend/prisma ./prisma
+RUN npx prisma generate
 
 EXPOSE 3001
 
