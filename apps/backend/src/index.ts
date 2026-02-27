@@ -587,8 +587,10 @@ app.get('/api/news', async (req, res) => {
         const news = await prisma.newsPost.findMany({
             orderBy: { createdAt: 'desc' }
         });
+        console.log(`Fetched ${news.length} news posts`);
         res.json(news);
     } catch (error) {
+        console.error('Error fetching news:', error);
         res.status(500).json({ error: 'Kon nieuwsberichten niet ophalen' });
     }
 });

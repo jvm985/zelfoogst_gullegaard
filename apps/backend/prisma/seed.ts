@@ -9,6 +9,7 @@ async function main() {
   await prisma.membership.deleteMany();
   await prisma.recipe.deleteMany();
   await prisma.crop.deleteMany();
+  await prisma.newsPost.deleteMany();
   await prisma.user.deleteMany();
 
   console.log('Seeding admin user...');

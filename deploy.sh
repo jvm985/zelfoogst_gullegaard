@@ -44,6 +44,9 @@ echo "💾 Syncing database schema..."
 # Gebruik db push voor de eerste setup (wanneer er geen migratie-bestanden zijn)
 docker compose run --rm backend npx prisma db push --accept-data-loss
 
+# Herstart de backend zodat deze zeker de nieuwe tabellen ziet
+docker compose restart backend
+
 echo "🌱 Seeding database..."
 # Voer de seed uit om de beheerder en gewassen aan te maken
 docker compose run --rm backend npx prisma db seed || echo "⚠️ Seeding failed or already done, continuing..."
