@@ -25,7 +25,7 @@ const Contact = () => (
           <div className="bg-green-50 p-3 rounded-xl"><Mail className="text-green-600" size={24} /></div>
           <div>
             <p className="text-sm font-black text-slate-400 uppercase tracking-widest mb-1">Email</p>
-            <p className="text-slate-800 text-lg font-bold italic">info@gullegaard.be</p>
+            <p className="text-slate-800 text-lg font-bold italic">info@mijn-csa.be</p>
           </div>
         </div>
 

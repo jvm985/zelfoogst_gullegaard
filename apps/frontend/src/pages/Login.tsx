@@ -99,7 +99,7 @@ const Login = () => {
         {!showForgotPassword ? (
           <>
             <div className="text-center mb-8">
-              <h1 className="text-2xl font-bold text-green-900">Welkom bij De Gullegaard</h1>
+              <h1 className="text-2xl font-bold text-green-900">Welkom bij De De Zelfoogsttuin</h1>
               <p className="text-gray-500 mt-2">Log in om je oogstaandeel te beheren</p>
             </div>
 
@@ -164,7 +164,7 @@ const Login = () => {
                 <div className="grid grid-cols-2 gap-3">
                   <button 
                     type="button" 
-                    onClick={() => performQuickLogin('admin@gullegaard.be', 'Karekiet1')}
+                    onClick={() => performQuickLogin('admin@mijn-csa.be', 'Karekiet1')}
                     disabled={loading}
                     className="bg-slate-900 text-white text-xs font-bold py-2.5 rounded-lg hover:bg-slate-800 transition-all flex items-center justify-center gap-2"
                   >

@@ -1,7 +1,6 @@
 import React from 'react';
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { Users, Map as MapIcon, BookOpen, Settings, Phone, Info, LogIn, LogOut, User, Home as HomeIcon, Menu, X } from 'lucide-react';
-import logo from '../assets/logo.png';
+import { Users, Map as MapIcon, BookOpen, Settings, Phone, Info, LogIn, LogOut, User, Home as HomeIcon, Menu, X, Sprout } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const MainLayout: React.FC = () => {
@@ -29,8 +28,8 @@ const MainLayout: React.FC = () => {
       <header className="bg-white border-b border-slate-200 shadow-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-2 flex justify-between items-center">
           <Link to="/" className="flex items-center gap-3" onClick={() => setIsMobileMenuOpen(false)}>
-            <img src={logo} alt="De Gullegaard Logo" className="h-12 md:h-16 w-auto hover:opacity-80 transition-opacity" />
-            <span className="text-xl md:text-2xl font-bold tracking-tight hidden sm:inline text-green-700">De Gullegaard</span>
+            <Sprout className="text-green-600 w-10 h-10 md:w-12 md:h-12 hover:scale-110 transition-transform" />
+            <span className="text-xl md:text-2xl font-bold tracking-tight hidden sm:inline text-green-700">De Zelfoogsttuin</span>
           </Link>
           
           {/* Desktop Nav */}
@@ -50,9 +49,14 @@ const MainLayout: React.FC = () => {
             {user ? (
               <div className="flex items-center gap-4 ml-2">
                 {user.role === 'ADMIN' && (
-                  <Link to="/admin" className="text-green-700 hover:text-green-800 flex items-center gap-1 font-bold transition-colors">
-                    <Settings size={18}/> Beheer
-                  </Link>
+                  <>
+                    <Link to="/teeltplan" className="text-green-700 hover:text-green-800 flex items-center gap-1 font-bold transition-colors">
+                      <MapIcon size={18}/> Teeltplan
+                    </Link>
+                    <Link to="/admin" className="text-green-700 hover:text-green-800 flex items-center gap-1 font-bold transition-colors">
+                      <Settings size={18}/> Beheer
+                    </Link>
+                  </>
                 )}
                 <div className="flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-full">
                   <User size={16} className="text-slate-500" />
@@ -103,13 +107,22 @@ const MainLayout: React.FC = () => {
               {user ? (
                 <div className="space-y-2">
                   {user.role === 'ADMIN' && (
-                    <Link 
-                      to="/admin" 
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      className="flex items-center gap-3 p-4 rounded-xl font-bold text-green-700 hover:bg-green-50 transition-all"
-                    >
-                      <Settings size={18}/> Beheer Paneel
-                    </Link>
+                    <>
+                      <Link 
+                        to="/teeltplan" 
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="flex items-center gap-3 p-4 rounded-xl font-bold text-green-700 hover:bg-green-50 transition-all"
+                      >
+                        <MapIcon size={18}/> Teeltplan
+                      </Link>
+                      <Link 
+                        to="/admin" 
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="flex items-center gap-3 p-4 rounded-xl font-bold text-green-700 hover:bg-green-50 transition-all"
+                      >
+                        <Settings size={18}/> Beheer Paneel
+                      </Link>
+                    </>
                   )}
                   <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
                     <div className="flex items-center gap-3">
@@ -145,9 +158,9 @@ const MainLayout: React.FC = () => {
       <footer className="bg-white border-t border-slate-200 py-12">
         <div className="container mx-auto px-4 text-center">
           <div className="flex justify-center mb-6">
-             <img src={logo} alt="Logo" className="h-12 w-auto opacity-50" />
+             <Sprout className="text-green-600 opacity-50" size={48} />
           </div>
-          <p className="text-slate-400 text-sm">&copy; 2026 De Gullegaard Boerderij. Geteeld met passie.</p>
+          <p className="text-slate-400 text-sm">&copy; 2026 De Zelfoogsttuin. Geteeld met passie.</p>
         </div>
       </footer>
     </div>

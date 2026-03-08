@@ -4,7 +4,7 @@
 set -e
 
 # Repository URL
-REPO_URL="git@github.com:jvm985/zelfoogst_gullegaard.git"
+REPO_URL="git@github.com:jvm985/zelfoogst_mijn-csa.git"
 
 echo "🚀 Starting git initialization and push to GitHub..."
 
@@ -31,7 +31,7 @@ git add .
 
 # 4. Commit the changes
 echo "💾 Committing changes..."
-COMMIT_MESSAGE=${1:-"Update: Functional changes for De Gullegaard"}
+COMMIT_MESSAGE=${1:-"Update: Functional changes for Mijn CSA"}
 git commit -m "$COMMIT_MESSAGE" || echo "⚠️ Nothing to commit"
 
 # 5. Push to GitHub

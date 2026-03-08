@@ -4,6 +4,7 @@ import Home from './pages/Home';
 import Info from './pages/Info';
 import Contact from './pages/Contact';
 import HarvestMap from './pages/HarvestMap';
+import Teeltplan from './pages/Teeltplan';
 import AdminDashboard from './pages/AdminDashboard';
 import Registration from './pages/Registration';
 import Recipes from './pages/Recipes';
@@ -39,6 +40,7 @@ function App() {
             {/* Admin Routes */}
             <Route element={<PrivateRoute roles={['ADMIN']} />}>
               <Route path="admin" element={<AdminDashboard />} />
+              <Route path="teeltplan" element={<Teeltplan />} />
             </Route>
           </Route>
         </Routes>

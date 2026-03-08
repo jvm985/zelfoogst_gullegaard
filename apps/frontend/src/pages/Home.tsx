@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Sprout, Users, MapIcon, ChevronRight, Calendar } from 'lucide-react';
-import logo from '../assets/logo.png';
 
 interface NewsPost {
   id: string;
@@ -25,7 +24,6 @@ const Home = () => {
         return res.json();
       })
       .then(data => {
-        console.log('Front-end received news:', data);
         setNews(Array.isArray(data) ? data.slice(0, 3) : []);
       })
       .catch(err => {
@@ -40,14 +38,14 @@ const Home = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
         <div className="text-left animate-in fade-in slide-in-from-left-8 duration-700">
           <div className="inline-flex items-center gap-2 bg-green-50 px-4 py-2 rounded-full text-green-700 font-black text-[10px] uppercase tracking-widest mb-6">
-            <Sprout size={14} /> Welkom bij GulleGaard
+            <Sprout size={14} /> Welkom bij De Zelfoogsttuin
           </div>
           <h1 className="text-5xl md:text-7xl font-black text-slate-900 mb-6 tracking-tight leading-[0.9]">
-            Verse oogst van <span className="text-green-600 italic">GulleGaard</span>
+            Verse oogst van <span className="text-green-600 italic">De Zelfoogsttuin</span>
           </h1>
           <p className="text-xl text-slate-600 max-w-lg leading-relaxed font-medium mb-10">
-            Samen zaaien, verzorgen en oogsten in Kalmthout. 
-            Beleef de seizoenen op het veld en geniet van eerlijk eten.
+            Samen zaaien, verzorgen en oogsten. 
+            Beleef de seizoenen op het veld en geniet van eerlijk, lokaal eten.
           </p>
           <div className="flex flex-wrap gap-4">
             <Link to="/oogst" className="bg-green-600 hover:bg-green-700 text-white font-black py-4 px-10 rounded-2xl transition-all shadow-lg shadow-green-200 uppercase tracking-tight">
@@ -65,14 +63,16 @@ const Home = () => {
            <div className="relative bg-white p-4 rounded-[3rem] shadow-2xl rotate-2">
              <img 
                src="https://images.unsplash.com/photo-1523348837708-15d4a09cfac2?q=80&w=1000&auto=format&fit=crop" 
-               alt="GulleGaard Veld" 
+               alt="De Zelfoogsttuin Veld" 
                className="rounded-[2.5rem] w-full aspect-[4/3] object-cover"
              />
              <div className="absolute -bottom-6 -left-6 bg-white p-4 rounded-2xl shadow-xl flex items-center gap-3 -rotate-3">
-               <img src={logo} alt="Logo" className="h-10 w-auto" />
+               <div className="bg-green-100 p-2 rounded-xl">
+                 <Sprout size={24} className="text-green-600" />
+               </div>
                <div className="pr-4">
-                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Boerderij</p>
-                 <p className="font-bold text-slate-800">Kalmthout</p>
+                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Onze</p>
+                 <p className="font-bold text-slate-800">Boerderij</p>
                </div>
              </div>
            </div>
@@ -85,7 +85,7 @@ const Home = () => {
             <MapIcon className="text-green-600" size={32} />
           </div>
           <h2 className="text-2xl font-black text-slate-900 mb-3">Lokaal & Vers</h2>
-          <p className="text-slate-600 leading-relaxed font-medium">Direct van de boer naar jouw bord. Onze deelnemers oogsten zelf hun groenten op het veld in Kalmthout.</p>
+          <p className="text-slate-600 leading-relaxed font-medium">Direct van de boer naar jouw bord. Onze deelnemers oogsten zelf hun groenten vers op het veld.</p>
         </div>
 
         <div className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-xl hover:border-green-500/50 transition-all group">

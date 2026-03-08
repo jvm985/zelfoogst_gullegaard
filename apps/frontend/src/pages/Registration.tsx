@@ -165,7 +165,7 @@ const Registration = () => {
             <CheckCircle size={40} />
             <div>
               <h2 className="text-2xl font-black text-slate-900">U bent reeds ingeschreven</h2>
-              <p className="text-slate-500 font-medium">Bedankt voor je deelname aan De Gullegaard!</p>
+              <p className="text-slate-500 font-medium">Bedankt voor je deelname aan De De Zelfoogsttuin!</p>
             </div>
           </div>
 

@@ -1,0 +1,124 @@
+een teeltplan bevat een jaarplanning waarrbij de boer aangeeft op welke plaats van het veld hij welk gewas zal telen. een teelt bestaat uit een voorbereidingsperiode om de grond klaar te maken, een zaai- of plant periode, een groeiperiode en een oogstperiode. de boer geeft ook aan hoeveel meter hij van het gewas wil telen. 
+
+
+### Stap 1: Definieer de Datastructuur (Het "Datamodel")
+
+De ontwikkelaar moet eerst de fysieke en biologische entiteiten vastleggen.
+
+* **Entiteit "Veld":** Bestaat uit $N$ Blokken.
+* **Entiteit "Blok":** Bevat een set Bedden (met afmetingen lengte x breedte).
+* **Entiteit "Gewas":** Bevat attributen zoals:
+* *Familie* (bijv. Nachtschade, Kruisbloemigen).
+* *Voedingsbehoefte* (Sluimerend, Gemiddeld, Gulzig).
+* *Groeiduur* (Dagen van zaai tot oogst).
+* *Plantafstand* (In de rij vs. tussen de rijen).
+* *Temperatuurgevoeligheid* (Wanneer mag het naar buiten?).
+
+
+
+### Stap 2: Implementeer de Business Rules (De "Constraints")
+
+Dit zijn de harde regels waar het programma niet van mag afwijken.
+
+* **Vruchtwisselings-check (De 1-op-6 regel):** Een gewas uit familie $X$ mag pas na 6 jaar terugkeren op Blok $Y$.
+* **Voedingsbalans:** De totale stikstofbehoefte van de gewassen in Blok $Y$ in jaar $T$ mag de beschikbare bemesting (input-variabele) niet overschrijden.
+* **Ruimtelijke berekening:** $Aantal Planten = \frac{Oppervlakte Bed}{Plantafstand In de rij \times Rijafstand}$
+
+### Stap 3: Het Algoritme voor de "Teeltcyclus"
+
+De software moet per bed een tijdlijn (Gantt-chart) kunnen genereren.
+
+1. **Bepaal de "Hoofdteelt":** Dit is het ankerpunt in de zomer (bijv. de tomaat of de pompoen).
+2. **Backwards Scheduling:** Reken vanaf de gewenste oogstdatum terug naar de plantdatum en de zaaidatum (in de kas).
+3. **Forward Scheduling:** Vul de vrije ruimte vóór de hoofdteelt in met een "Voorteelt" (bijv. vroege sla) en ná de oogst met een "Nateelt" of "Groenbemester".
+4. **Conflict-detectie:** Als de nateelt van vorig jaar nog in de grond staat op de geplande startdatum van de nieuwe teelt, moet het systeem een error geven.
+
+### Stap 4: Input-Output Functies
+
+Een ontwikkelaar heeft duidelijke I/O-specificaties nodig:
+
+* **Input:** Een database met gewas-eigenschappen en een startdatum.
+* **Output 1: Zaailijst per week.** Een chronologische lijst: "Week 12: Zaai 400x Bloemkool in tray".
+* **Output 2: Poot- en plantkaart.** Een visuele weergave van welk bed op welke datum vol staat.
+* **Output 3: Oogstprognose.** "Week 30: Verwachte opbrengst 100kg Courgette".
+
+### Stap 5: De Logica van "Naburige Interactie" (Optioneel)
+
+Als je geavanceerd wilt gaan, voeg je een **Combinatieteelt-matrix** toe. Dit is een tabel waarbij Gewas A een positieve (+1), neutrale (0) of negatieve (-1) waarde krijgt t.o.v. Gewas B (bijv. wortelen en uien helpen elkaar, maar uien en bonen niet).
+
+---
+
+### Samenvatting voor de Ontwikkelaar
+
+Vraag de ontwikkelaar om een systeem te bouwen dat werkt op basis van:
+
+1. **Ruimtelijke allocatie** (Past het fysiek op het bed?)
+2. **Temporele allocatie** (Passen de teelten achter elkaar in het seizoen?)
+3. **Relationele checks** (Voldoet het aan de biologische rotatieregels?)
+
+Wilt u dat ik een voorbeeld-tabel opstel van de "Gewas-eigenschappen" die de ontwikkelaar in de database moet zetten?
+Ik heb een gedetailleerd datamodel voor je opgesteld in een nieuwe notitie genaamd **"Datamodel Biologisch Teeltplan"**.
+
+Deze tabel bevat de essentiële variabelen die een softwareontwikkelaar nodig heeft om de database en de logica achter het teeltplan te bouwen, zoals:
+
+* **Botanische familie:** Cruciaal voor het automatisch controleren van de vruchtwisseling (de 1-op-6 regel).
+* **Groeiduur en zaaiperiode:** Voor het berekenen van de tijdlijn en het plannen van voor- en nateelten.
+* **Plantafstanden:** Om automatisch te berekenen hoeveel zaden of plantgoed er per bed besteld moet worden.
+* **Logische regels:** Een aanzet voor de code (if-then statements) om fouten in de planning te voorkomen.
+
+Hiermee kan de ontwikkelaar direct aan de slag met het bouwen van de back-end van je programma.
+
+ID;CROP_NAME;FAMILY_ID;NUTRIENT_LEVEL;DAYS_TO_MATURITY;SOW_START;SOW_END;MIN_TEMP_C;ROW_SPACING_CM;PLANT_SPACING_CM;PRE_POST_CULTURE;ROTATION_GROUP
+1;Wortel (Nantes);Schermbloemigen;1;90;01-03;01-07;7;25;3;TRUE;Wortelgewas
+2;Bloemkool;Kruisbloemigen;3;75;15-03;15-06;10;60;50;FALSE;Kool
+3;Sla (Meikoningin);Composieten;2;50;01-02;01-08;5;30;25;TRUE;Bladgroente
+4;Ui (Sturon);Lookachtigen;1;120;01-03;15-04;8;25;10;FALSE;Look
+5;Courgette;Komkommerachtigen;3;60;01-05;15-06;15;100;100;FALSE;Vruchtgewas
+6;Stokboon;Vlinderbloemigen;1;70;15-05;01-07;12;75;15;TRUE;Peulvrucht
+7;Spinazie;Amarantachtigen;2;40;01-02;15-04;4;20;5;TRUE;Bladgroente
+
+Toelichting op de velden voor de ontwikkelaar:
+
+    FAMILY_ID: Essentieel voor de vruchtwisselings-engine. De logica moet voorkomen dat een gewas uit dezelfde FAMILY_ID binnen 6 jaar op hetzelfde blok terugkomt.
+
+    NUTRIENT_LEVEL: Gebruik dit voor een bemestings-calculator (1 = weinig compost nodig, 3 = zware bemesting).
+
+    SOW_START / SOW_END: Gebruik dit voor validatie. Als de gebruiker een gewas inplant buiten deze range, moet de software een waarschuwing geven.
+
+    ROW/PLANT_SPACING: Gebruik deze voor de voorraad-module.
+
+        Formule: Aantal_Zaden = (Bed_Lengte / Row_Spacing) * (Bed_Breedte / Plant_Spacing).
+
+    PRE_POST_CULTURE: Een boolean (TRUE/FALSE) die aangeeft of een gewas kort genoeg groeit om als voor- of nateelt te dienen in hetzelfde seizoen.
+
+
+
+ De wekelijkse output ziet er als volgt uit, bijvb voor week 12: 
+
+ WEEK;DAG;PRIORITEIT;ACTIE_TYPE;GEWAS;LOCATIE;HOEVEELHEID;DETAILS;DEADLINE
+12;MA;1;ZAAIEN_BUITEN;Wortel (Nantes);Blok 4, Bed 1-3;2500 zaden;12 rijen, 25cm afstand, zaaidiepte 1cm;22-03
+12;DI;1;PLANTEN_BUITEN;Sla (Meikoningin);Blok 2, Bed 1;400 plantjes;Perspotjes 4x4, plantafstand 25x30cm;24-03
+12;WO;2;BEMESTING;Compost;Blok 3;3 m3;Verdelen over bedden 1-5 voor de Koolteelt;25-03
+12;DO;1;ZAAIEN_KAS;Bloemkool;Trays;500 zaden;Gebruik tray 144-gaats, biologische potgrond;26-03
+12;VR;3;ONDERHOUD;Spinazie;Blok 2, Bed 5;10 m2;Schoffelen tussen de rijen (handmatig);27-03
+12;ZA;2;VOORBEREIDING;Bedden maken;Blok 5;5 bedden;Vrijmaken van onkruid en egaliseren voor courgettes;29-03
+
+
+
+Technische instructie voor de software-ontwikkelaar:
+
+Om deze CSV correct te genereren uit de database, moet de ontwikkelaar de volgende queries/logica bouwen:
+
+    Status-vlaggen: Elk item in de lijst moet een STATUS hebben (bijv. TODO, IN_PROGRESS, DONE). Zodra jij in de app een actie afvinkt, moet de status in de database worden bijgewerkt.
+
+    Hoeveelheid-calculator: De kolom HOEVEELHEID wordt dynamisch berekend:
+
+        Formule: Bed_Oppervlakte / (Row_Spacing * Plant_Spacing).
+
+    Afhankelijkheden (Dependencies):
+
+        Een actie PLANTEN_BUITEN in week 12 mag alleen op de lijst verschijnen als de actie ZAAIEN_KAS (bijv. 6 weken eerder) de status DONE heeft gekregen.
+
+    Locatie-mapping: De kolom LOCATIE koppelt het gewas direct aan de fysieke BED_ID die jij in je 6 blokken hebt gedefinieerd.
+
+    

@@ -3,9 +3,9 @@ import { Target, History, Heart, Users } from 'lucide-react';
 const Info = () => (
   <div className="max-w-4xl mx-auto pb-20">
     <div className="text-center mb-16">
-      <h1 className="text-5xl font-black text-slate-900 mb-6 tracking-tight uppercase">Over GulleGaard</h1>
+      <h1 className="text-5xl font-black text-slate-900 mb-6 tracking-tight uppercase">Over De Zelfoogsttuin</h1>
       <p className="text-xl text-slate-600 leading-relaxed font-medium">
-        GulleGaard is een plek waar we niet alleen groenten kweken, maar samen de overvloed 
+        De Zelfoogsttuin is een plek waar we niet alleen groenten kweken, maar samen de overvloed 
         van de natuur beleven met respect voor de bodem en de seizoenen.
       </p>
     </div>
@@ -19,7 +19,7 @@ const Info = () => (
         </h2>
         <div className="space-y-4 text-slate-700 leading-relaxed text-lg">
           <p>
-            Op GulleGaard telen we op een ecologische manier een breed scala aan groenten voor onze deelnemers. 
+            Op De Zelfoogsttuin telen we op een ecologische manier een breed scala aan groenten voor onze deelnemers. 
             We geloven in <strong>Community Supported Agriculture (CSA)</strong>: een model waarbij de boer en de 
             burgers samen verantwoordelijk zijn voor de boerderij.
           </p>
@@ -38,21 +38,20 @@ const Info = () => (
             <History size={28} /> Onze Geschiedenis
           </h2>
           <p className="text-slate-300 leading-relaxed mb-4">
-            Het project begon in 2018 onder de naam <strong>Het Kruisbos</strong>. Jarenlang was het een vaste waarde 
-            in Kalmthout voor verse zelfoogst.
+            Dit project is ontstaan uit een passie voor duurzame landbouw en de wens om mensen weer 
+            dichter bij hun voedselbron te brengen.
           </p>
           <p className="text-slate-300 leading-relaxed">
-            In 2025 sloegen we een nieuwe weg in en werd het veld omgedoopt tot <strong>GulleGaard</strong>. 
-            Een nieuwe naam, maar met dezelfde passie voor de grond en de gemeenschap.
+            Sinds de start is het veld uitgegroeid tot een bloeiende gemeenschap waar we met zorg voor de bodem
+            en de biodiversiteit een rijk assortiment aan gewassen telen.
           </p>
         </div>
-
         <div className="bg-green-600 text-white p-10 rounded-[2.5rem] shadow-2xl">
           <h2 className="text-2xl font-black mb-6 text-white flex items-center gap-3">
             <Heart size={28} /> De Landgenoten
           </h2>
           <p className="leading-relaxed mb-4">
-            GulleGaard werkt nauw samen met <strong>De Landgenoten</strong>. Zij kopen landbouwgrond aan met 
+            De Zelfoogsttuin werkt nauw samen met <strong>De Landgenoten</strong>. Zij kopen landbouwgrond aan met 
             het geld van aandeelhouders en schenkers om het te beschermen voor bio-landbouw.
           </p>
           <p className="leading-relaxed">

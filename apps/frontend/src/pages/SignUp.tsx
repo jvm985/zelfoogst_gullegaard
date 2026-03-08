@@ -57,7 +57,7 @@ const SignUp = () => {
       <div className="bg-white p-8 rounded-3xl shadow-xl border border-slate-100">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-black text-slate-900">Account Aanmaken</h1>
-          <p className="text-slate-500 mt-2">Word deel van de Gullegaard gemeenschap</p>
+          <p className="text-slate-500 mt-2">Word deel van de De Zelfoogsttuin gemeenschap</p>
         </div>
 
         {error && (

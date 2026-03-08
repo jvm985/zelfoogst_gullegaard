@@ -3,56 +3,45 @@
 # Exit on any error
 set -e
 
-REPO_DIR="/home/joachim/zelfoogst_gullegaard" # Update this to your prod path
-BRANCH="main"
+# Default branch is main, but can be overridden
+BRANCH=${BRANCH:-main}
+REPO_DIR="/home/joachim/zelfoogst_mijn-csa" # Update this to your prod path
 
-echo "🚀 Starting deployment of De Gullegaard..."
+echo "🚀 Starting production deployment of De Zelfoogsttuin..."
 
-# Check if .env exists, if not, warn the user
-if [ ! -f ".env" ]; then
-    echo "⚠️ Warning: .env file not found. Ensure you have your production secrets (DB_PASSWORD, JWT_SECRET, etc.) configured."
-    # Optional: exit 1 if you want to force it
-fi
 if [ -d ".git" ]; then
     echo "📂 Pulling latest changes from GitHub ($BRANCH branch)..."
     git fetch origin
     git reset --hard origin/$BRANCH
-else
-    echo "❌ This script must be run inside the git repository."
-    exit 1
 fi
 
-# 2. Re-build and start the containers
+# 1. Re-build and start the containers
 echo "🐳 Rebuilding and starting Docker containers..."
 docker compose down
 docker compose up --build -d
 
-# 3. Database Migrations
+# 2. Database Wait & Sync
 echo "⏳ Waiting for database to be ready..."
-RETRIES=10
-while ! docker compose exec -T db pg_isready -U joachim > /dev/null 2>&1; do
+RETRIES=15
+until docker compose exec -T db pg_isready -U joachim > /dev/null 2>&1 || [ $RETRIES -eq 0 ]; do
   echo "Database is not ready yet... waiting ($RETRIES retries left)"
   sleep 3
   RETRIES=$((RETRIES - 1))
-  if [ $RETRIES -eq 0 ]; then
-    echo "❌ Database timed out! Printing db logs..."
-    docker compose logs db
-    exit 1
-  fi
 done
 
+if [ $RETRIES -eq 0 ]; then
+    echo "❌ Database connection failed."
+    exit 1
+fi
+
 echo "💾 Syncing database schema..."
-# Gebruik db push voor de eerste setup (wanneer er geen migratie-bestanden zijn)
-docker compose run --rm backend npx prisma db push --accept-data-loss
+docker compose exec -T backend npx prisma db push --accept-data-loss
 
-# Herstart de backend zodat deze zeker de nieuwe tabellen ziet
-docker compose restart backend
+echo "🌱 Seeding base data (Admin, Crops, Recipes)..."
+docker compose exec -T backend npx prisma db seed
 
-echo "🌱 Seeding database..."
-# Voer de seed uit om de beheerder en gewassen aan te maken
-docker compose run --rm backend npx prisma db seed || echo "⚠️ Seeding failed or already done, continuing..."
+echo "🚜 Generating Master Cultivation Plan 2026..."
+docker compose exec -T backend npx ts-node fix_teeltplan.ts
 
-# 4. Success message
-echo "✨ Deployment successful! The app is now live."
-echo "🔗 Frontend: http://your-server-ip"
-echo "🔗 Backend API: http://your-server-ip/api"
+echo "✨ Deployment successful! The app is now live and identical to local."
+echo "🔗 App: http://your-domain-or-ip"

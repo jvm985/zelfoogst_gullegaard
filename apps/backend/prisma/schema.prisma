@@ -7,17 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Role {
-  USER
-  ADMIN
-}
-
-enum MembershipTier {
-  MINIMUM
-  STANDARD
-  HIGH
-}
-
 model User {
   id                      String       @id @default(cuid())
   email                   String       @unique
@@ -39,12 +28,12 @@ model Membership {
   id            String         @id @default(cuid())
   year          Int
   userId        String
-  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   totalFee      Float
   isPaid        Boolean        @default(false)
-  familyMembers FamilyMember[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
+  familyMembers FamilyMember[]
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, year])
 }
@@ -52,34 +41,129 @@ model Membership {
 model FamilyMember {
   id           String          @id @default(cuid())
   membershipId String
-  membership   Membership      @relation(fields: [membershipId], references: [id], onDelete: Cascade)
-  type         String // "ADULT" or "CHILD"
-  tier         MembershipTier? // Only for adults
-  age          Int? // Only for children
+  type         String
+  tier         MembershipTier?
+  age          Int?
   price        Float
+  membership   Membership      @relation(fields: [membershipId], references: [id], onDelete: Cascade)
 }
 
 model Crop {
-  id            String   @id @default(cuid())
-  name          String
+  id              String         @id @default(cuid())
+  name            String
+  description     String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  canBePrePost    Boolean        @default(false)
+  daysToMaturity  Int            @default(60)
+  familyId        String?
+  minTemp         Float?
+  nutrientLevel   Int            @default(1)
+  plantSpacing    Float          @default(30)
+  rowSpacing      Float          @default(30)
+  seedsPerSqm     Float          @default(0)
+  pricePerSeedSqm Float          @default(0)
+  sowEnd          String         @default("12-31")
+  sowStart        String         @default("01-01")
+  rotationGroupId String?
+  family          CropFamily?    @relation(fields: [familyId], references: [id])
+  rotationGroup   RotationGroup? @relation(fields: [rotationGroupId], references: [id])
+  cultivations    Cultivation[]
+  recipes         Recipe[]       @relation("RecipeCrops")
+}
+
+model RotationGroup {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  crops     Crop[]
+  blocks    Block[]  @relation("BlockRotationGroups")
+}
+
+model CropFamily {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  crops     Crop[]
+}
+
+model Field {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  blocks    Block[]
+}
+
+model Block {
+  id             String          @id @default(cuid())
+  name           String
+  fieldId        String
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  col            Int             @default(0)
+  row            Int             @default(0)
+  length         Float           @default(10)
+  bedWidth       Float           @default(0.75)
+  beds           Bed[]
+  field          Field           @relation(fields: [fieldId], references: [id])
+  rotationGroups RotationGroup[] @relation("BlockRotationGroups")
+}
+
+model Bed {
+  id           String        @id @default(cuid())
+  name         String
+  width        Float
+  length       Float
+  blockId      String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  block        Block         @relation(fields: [blockId], references: [id])
+  cultivations Cultivation[]
+}
+
+model Cultivation {
+  id          String            @id @default(cuid())
+  cropId      String
+  bedId       String
+  year        Int
+  quantity    Float
+  startDate   DateTime
+  sowDate     DateTime?
+  harvestDate DateTime?
+  endDate     DateTime?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  bed         Bed               @relation(fields: [bedId], references: [id])
+  crop        Crop              @relation(fields: [cropId], references: [id])
+  tasks       CultivationTask[]
+}
+
+model CultivationTask {
+  id            String      @id @default(cuid())
+  cultivationId String
+  type          TaskType
   description   String?
-  isHarvestable Boolean  @default(false)
-  fieldLocation String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  recipes       Recipe[] @relation("RecipeCrops")
+  priority      Int         @default(2)
+  scheduledDate DateTime
+  status        TaskStatus  @default(TODO)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  cultivation   Cultivation @relation(fields: [cultivationId], references: [id], onDelete: Cascade)
 }
 
 model Recipe {
   id               String   @id @default(cuid())
   title            String
   content          String
-  harvestableCrops Crop[]   @relation("RecipeCrops")
-  otherIngredients String // Text for non-harvestable ingredients
+  otherIngredients String
   authorId         String
-  author           User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
+  author           User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  harvestableCrops Crop[]   @relation("RecipeCrops")
 }
 
 model Newsletter {
@@ -97,4 +181,38 @@ model NewsPost {
   imageUrl  String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum MembershipTier {
+  MINIMUM
+  STANDARD
+  HIGH
+}
+
+
+enum TaskType {
+  PREPARATION
+  SOW_INDOORS
+  SOW_OUTDOORS
+  PLANT_OUTDOORS
+  FERTILIZATION
+  MAINTENANCE
+  HARVEST
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+}
+
+model SystemSetting {
+  id    String @id @default(cuid())
+  key   String @unique
+  value String
 }

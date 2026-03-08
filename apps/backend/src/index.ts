@@ -9,591 +9,236 @@ import crypto from 'crypto';
 
 dotenv.config();
 
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
-});
-
-process.on('uncaughtException', (err) => {
-  console.error('Uncaught Exception thrown:', err);
-});
-
 const app = express();
-const prisma = new PrismaClient({
-  datasources: {
-    db: {
-      url: process.env.DATABASE_URL as string,
-    },
-  },
-});
+const prisma = new PrismaClient();
 const port = process.env.PORT || 3001;
 const JWT_SECRET = process.env.JWT_SECRET || 'secret';
 
 app.use(cors());
 app.use(express.json());
 
-// --- Email Setup ---
-let transporter: nodemailer.Transporter;
-
-async function setupEmail() {
-    if (process.env.SMTP_HOST) {
-        transporter = nodemailer.createTransport({
-            host: process.env.SMTP_HOST,
-            port: parseInt(process.env.SMTP_PORT || '587'),
-            auth: {
-                user: process.env.SMTP_USER,
-                pass: process.env.SMTP_PASS,
-            },
-        });
-    } else {
-        const testAccount = await nodemailer.createTestAccount();
-        transporter = nodemailer.createTransport({
-            host: "smtp.ethereal.email",
-            port: 587,
-            secure: false,
-            auth: {
-                user: testAccount.user,
-                pass: testAccount.pass,
-            },
-        });
-        console.log('--- Test Email Account Created ---');
-        console.log(`User: ${testAccount.user}`);
-        console.log(`Pass: ${testAccount.pass}`);
-        console.log('---------------------------------');
-    }
-}
-
-setupEmail().catch(err => {
-    console.error('Failed to setup email transporter:', err);
-});
-
 // --- Middleware ---
-
 const authenticateToken = (req: any, res: any, next: any) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
-
-  if (!token) {
-    console.log('Auth failed: No token provided');
-    return res.sendStatus(401);
-  }
-
+  if (!token) return res.status(401).json({ error: 'Geen token' });
   jwt.verify(token, JWT_SECRET, (err: any, user: any) => {
-    if (err) {
-      console.log('Auth failed: Invalid or expired token', err.message);
-      return res.sendStatus(403);
-    }
+    if (err) return res.status(403).json({ error: 'Foutieve token' });
     req.user = user;
     next();
   });
 };
 
 const isAdmin = (req: any, res: any, next: any) => {
-  if (req.user && req.user.role === 'ADMIN') {
-    next();
-  } else {
-    res.status(403).json({ error: 'Access denied: Admins only' });
-  }
+  if (req.user && req.user.role === 'ADMIN') next();
+  else res.status(403).json({ error: 'Admins only' });
 };
 
-app.get('/api/health', async (req, res) => {
-  try {
-    await prisma.$queryRaw`SELECT 1`;
-    res.json({ status: 'ok', db: 'connected' });
-  } catch (error) {
-    res.status(500).json({ status: 'error', db: 'disconnected' });
-  }
+// --- Routes ---
+app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
+
+// --- System Settings ---
+app.get('/api/settings', async (req, res) => {
+    const settings = await prisma.systemSetting.findMany();
+    const map: Record<string, string> = {};
+    settings.forEach(s => map[s.key] = s.value);
+    res.json(map);
 });
 
-// --- Auth ---
-
-app.post('/api/signup', async (req, res) => {
-  try {
-    const { name, email } = req.body;
-    if (!email || !name) return res.status(400).json({ error: 'Naam en e-mail zijn verplicht' });
-
-    const existingUser = await prisma.user.findUnique({ where: { email } });
-    if (existingUser && existingUser.isVerified) {
-        return res.status(400).json({ error: 'E-mailadres is al in gebruik' });
-    }
-
-    const token = crypto.randomBytes(32).toString('hex');
-    const expiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h
-
-    await prisma.user.upsert({
-        where: { email },
-        update: {
-            name,
-            verificationToken: token,
-            verificationTokenExpiry: expiry,
-            isVerified: false
-        },
-        create: {
-            name,
-            email,
-            verificationToken: token,
-            verificationTokenExpiry: expiry,
-            isVerified: false
-        }
+app.patch('/api/settings', authenticateToken, isAdmin, async (req, res) => {
+    const { key, value } = req.body;
+    const setting = await prisma.systemSetting.upsert({
+        where: { key }, update: { value: value.toString() }, create: { key, value: value.toString() }
     });
-
-    const verificationLink = `http://localhost:5173/complete-signup?token=${token}`;
-    
-    const info = await transporter.sendMail({
-        from: '"De Gullegaard" <noreply@gullegaard.be>',
-        to: email,
-        subject: "Bevestig je account bij De Gullegaard",
-        html: `<p>Hallo ${name},</p><p>Klik op de onderstaande link om je account aan te maken en je wachtwoord in te stellen:</p><a href="${verificationLink}">${verificationLink}</a>`
-    });
-
-    console.log("Email sent: %s", info.messageId);
-    if (nodemailer.getTestMessageUrl(info)) {
-        console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
-    }
-
-    res.status(201).json({ message: 'Bevestigingsmail verzonden. Controleer je inbox.' });
-  } catch (error) {
-    console.error('Signup error:', error);
-    res.status(500).json({ error: 'Fout bij het verwerken van registratie' });
-  }
-});
-
-app.post('/api/auth/verify-signup-token', async (req, res) => {
-    const { token } = req.body;
-    const user = await prisma.user.findFirst({
-        where: {
-            verificationToken: token,
-            verificationTokenExpiry: { gt: new Date() }
-        }
-    });
-
-    if (!user) return res.status(400).json({ error: 'Ongeldige of verlopen link.' });
-    res.json({ email: user.email, name: user.name });
-});
-
-app.post('/api/auth/complete-signup', async (req, res) => {
-    try {
-        const { token, password } = req.body;
-        const user = await prisma.user.findFirst({
-            where: {
-                verificationToken: token,
-                verificationTokenExpiry: { gt: new Date() }
-            }
-        });
-
-        if (!user) return res.status(400).json({ error: 'Ongeldige of verlopen link.' });
-
-        const hashedPassword = await bcrypt.hash(password, 10);
-        await prisma.user.update({
-            where: { id: user.id },
-            data: {
-                password: hashedPassword,
-                isVerified: true,
-                verificationToken: null,
-                verificationTokenExpiry: null
-            }
-        });
-
-        res.json({ message: 'Account succesvol aangemaakt! Je kunt nu inloggen.' });
-    } catch (error) {
-        res.status(500).json({ error: 'Kon account niet voltooien' });
-    }
-});
-
-app.post('/api/login', async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    const user = await prisma.user.findUnique({ where: { email } });
-    
-    if (!user || !user.password || !user.isVerified) {
-        return res.status(401).json({ error: 'Ongeldige inloggegevens of account niet bevestigd.' });
-    }
-
-    const validPassword = await bcrypt.compare(password, user.password);
-    if (!validPassword) return res.status(401).json({ error: 'Ongeldige inloggegevens.' });
-
-    const token = jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '1h' });
-    res.json({ user: { id: user.id, name: user.name, email: user.email, role: user.role }, token });
-  } catch (error) {
-    res.status(500).json({ error: 'Inlogfout' });
-  }
-});
-
-app.post('/api/auth/forgot-password', async (req, res) => {
-  try {
-    const { email } = req.body;
-    const user = await prisma.user.findUnique({ where: { email } });
-    
-    if (user && user.isVerified) {
-        const token = crypto.randomBytes(32).toString('hex');
-        const expiry = new Date(Date.now() + 1 * 60 * 60 * 1000); // 1h
-
-        await prisma.user.update({
-            where: { id: user.id },
-            data: { resetToken: token, resetTokenExpiry: expiry }
-        });
-
-        const resetLink = `http://localhost:5173/reset-password?token=${token}`;
-        await transporter.sendMail({
-            from: '"De Gullegaard" <noreply@gullegaard.be>',
-            to: email,
-            subject: "Wachtwoord herstellen - De Gullegaard",
-            html: `<p>Klik op de link om je wachtwoord te herstellen:</p><a href="${resetLink}">${resetLink}</a>`
-        });
-    }
-    
-    res.json({ message: 'Als dit e-mailadres bij ons bekend is, ontvang je een herstellink.' });
-  } catch (error) {
-    res.status(500).json({ error: 'Fout bij verwerken verzoek' });
-  }
-});
-
-app.post('/api/auth/reset-password', async (req, res) => {
-    try {
-        const { token, password } = req.body;
-        const user = await prisma.user.findFirst({
-            where: {
-                resetToken: token,
-                resetTokenExpiry: { gt: new Date() }
-            }
-        });
-
-        if (!user) return res.status(400).json({ error: 'Ongeldige of verlopen herstellink.' });
-
-        const hashedPassword = await bcrypt.hash(password, 10);
-        await prisma.user.update({
-            where: { id: user.id },
-            data: {
-                password: hashedPassword,
-                resetToken: null,
-                resetTokenExpiry: null
-            }
-        });
-
-        res.json({ message: 'Wachtwoord succesvol gewijzigd.' });
-    } catch (error) {
-        res.status(500).json({ error: 'Kon wachtwoord niet resetten' });
-    }
-});
-
-// --- Membership ---
-
-app.get('/api/membership/status', authenticateToken, async (req: any, res) => {
-  try {
-    const userId = req.user.id;
-    const membership = await prisma.membership.findUnique({
-      where: { userId_year: { userId, year: 2026 } },
-      include: { familyMembers: true }
-    });
-
-    if (!membership) return res.json({ isRegistered: false });
-
-    res.json({
-      isRegistered: true,
-      isPaid: membership.isPaid,
-      totalFee: membership.totalFee,
-      adults: membership.familyMembers.filter(m => m.type === 'ADULT').map(m => ({ id: m.id, tier: m.tier?.toLowerCase(), price: m.price })),
-      children: membership.familyMembers.filter(m => m.type === 'CHILD').map(m => ({ id: m.id, age: m.age, price: m.price }))
-    });
-  } catch (error) {
-    res.status(500).json({ error: 'Kon status niet ophalen' });
-  }
-});
-
-app.post('/api/membership', authenticateToken, async (req: any, res) => {
-  try {
-    const { adults, children, totalPrice } = req.body;
-    const userId = req.user.id;
-
-    const membership = await prisma.$transaction(async (tx) => {
-      await tx.membership.deleteMany({ where: { userId, year: 2026 } });
-      return await tx.membership.create({
-        data: {
-          userId,
-          year: 2026,
-          totalFee: totalPrice,
-          familyMembers: {
-            create: [
-              ...adults.map((a: any) => ({ type: 'ADULT', tier: a.tier.toUpperCase(), price: parseFloat(a.price) })),
-              ...children.map((c: any) => ({ type: 'CHILD', age: parseInt(c.age), price: parseFloat(c.price) }))
-            ]
-          }
-        }
-      });
-    });
-
-    res.status(201).json({ message: 'Inschrijving succesvol', membership });
-  } catch (error) {
-    res.status(500).json({ error: 'Kon de inschrijving niet verwerken' });
-  }
-});
-
-// --- Admin ---
-
-app.get('/api/admin/members', authenticateToken, isAdmin, async (req, res) => {
-  try {
-    const members = await prisma.user.findMany({
-      include: { memberships: { where: { year: 2026 }, include: { familyMembers: true } } }
-    });
-    
-    const transformed = members.map(u => {
-      const m = u.memberships[0];
-      return {
-        id: u.id,
-        name: u.name,
-        email: u.email,
-        registrationDate: u.createdAt,
-        isMember: !!m,
-        hasPaid: m ? m.isPaid : false,
-        totalFee: m ? m.totalFee : 0,
-        familyComposition: m ? {
-          adults: m.familyMembers.filter(f => f.type === 'ADULT').length,
-          children: m.familyMembers.filter(f => f.type === 'CHILD').map(c => ({ age: c.age }))
-        } : { adults: 0, children: [] }
-      };
-    });
-
-    res.json(transformed);
-  } catch (error) {
-    res.status(500).json({ error: 'Kon leden niet ophalen' });
-  }
-});
-
-app.patch('/api/admin/members/:id/payment', authenticateToken, isAdmin, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { isPaid } = req.body;
-    const membership = await prisma.membership.findFirst({ where: { userId: id, year: 2026 } });
-    if (!membership) return res.status(404).json({ error: 'Geen inschrijving gevonden.' });
-    await prisma.membership.update({ where: { id: membership.id }, data: { isPaid } });
-    res.json({ message: 'Betalingsstatus bijgewerkt' });
-  } catch (error) {
-      res.status(500).json({ error: 'Fout bij bijwerken status' });
-  }
-});
-
-app.patch('/api/admin/members/:id/membership', authenticateToken, isAdmin, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { isMember } = req.body;
-    
-    if (!isMember) {
-      await prisma.membership.deleteMany({ where: { userId: id, year: 2026 } });
-    } else {
-      await prisma.membership.upsert({
-        where: { userId_year: { userId: id, year: 2026 } },
-        update: {},
-        create: { userId: id, year: 2026, totalFee: 0, isPaid: false }
-      });
-    }
-    res.json({ message: 'Lidmaatschap status bijgewerkt' });
-  } catch (error) {
-    res.status(500).json({ error: 'Fout bij bijwerken lidmaatschap status' });
-  }
-});
-
-app.delete('/api/admin/members/:id', authenticateToken, isAdmin, async (req, res) => {
-    try {
-        const { id } = req.params;
-        if (id === (req as any).user.id) return res.status(400).json({ error: 'Je kunt je eigen account niet verwijderen.' });
-        await prisma.user.delete({ where: { id } });
-        res.status(204).send();
-    } catch (error) {
-        res.status(500).json({ error: 'Fout bij verwijderen van lid' });
-    }
+    res.json(setting);
 });
 
 // --- Crops ---
 app.get('/api/crops', async (req, res) => {
-  const crops = await prisma.crop.findMany();
-  res.json(crops);
+  res.json(await prisma.crop.findMany({ include: { family: true, rotationGroup: true } }));
 });
 
 app.post('/api/crops', authenticateToken, isAdmin, async (req, res) => {
-  try {
-    const { name, description, fieldLocation, isHarvestable } = req.body;
-    const crop = await prisma.crop.create({ data: { name, description, fieldLocation, isHarvestable: isHarvestable || false } });
-    res.status(201).json(crop);
-  } catch (error) {
-    res.status(500).json({ error: 'Fout bij aanmaken gewas' });
-  }
+  const data = { ...req.body };
+  if (data.seedsPerSqm) data.seedsPerSqm = parseFloat(data.seedsPerSqm);
+  if (data.pricePerSeedSqm) data.pricePerSeedSqm = parseFloat(data.pricePerSeedSqm);
+  const crop = await prisma.crop.create({ data });
+  res.status(201).json(crop);
 });
 
 app.patch('/api/crops/:id', authenticateToken, isAdmin, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { isHarvestable, name, description, fieldLocation } = req.body;
-    const crop = await prisma.crop.update({ where: { id }, data: { isHarvestable, name, description, fieldLocation } });
-    res.json(crop);
-  } catch (error) {
-    res.status(500).json({ error: 'Fout bij bijwerken gewas' });
-  }
+  const data = { ...req.body };
+  if (data.seedsPerSqm) data.seedsPerSqm = parseFloat(data.seedsPerSqm);
+  if (data.pricePerSeedSqm) data.pricePerSeedSqm = parseFloat(data.pricePerSeedSqm);
+  // Clean undefined fields for exactOptionalPropertyTypes
+  Object.keys(data).forEach(key => data[key] === undefined && delete data[key]);
+  const crop = await prisma.crop.update({ where: { id: req.params.id }, data });
+  res.json(crop);
 });
 
 app.delete('/api/crops/:id', authenticateToken, isAdmin, async (req, res) => {
-  try {
-    const { id } = req.params;
-    await prisma.crop.delete({ where: { id } });
-    res.status(204).send();
-  } catch (error) {
-    res.status(500).json({ error: 'Fout bij verwijderen gewas' });
-  }
+  await prisma.crop.delete({ where: { id: req.params.id } });
+  res.status(204).send();
 });
 
-// --- Recipes ---
-app.get('/api/recipes', async (req, res) => {
-  const recipes = await prisma.recipe.findMany({ 
-    include: { 
-        author: { select: { name: true } },
-        harvestableCrops: true
-    },
-    orderBy: { createdAt: 'desc' }
-  });
-  res.json(recipes);
-});
+// --- Teeltplan Fields & Blocks ---
+app.get('/api/teeltplan/fields', async (req, res) => {
+  const { year } = req.query;
+  const activeYearSetting = await prisma.systemSetting.findUnique({ where: { key: 'active_year' } });
+  const targetYear = year ? parseInt(year as string) : (activeYearSetting ? parseInt(activeYearSetting.value) : new Date().getFullYear());
 
-app.post('/api/recipes', authenticateToken, async (req: any, res) => {
-  try {
-    const { title, content, otherIngredients, cropIds } = req.body;
-    
-    console.log('Creating recipe:', { title, cropIds });
-
-    const recipe = await prisma.recipe.create({ 
-        data: { 
-            title, 
-            content, 
-            otherIngredients: otherIngredients || "", 
-            authorId: req.user.id,
-            harvestableCrops: {
-                connect: (Array.isArray(cropIds) ? cropIds : []).map((id: string) => ({ id }))
-            }
-        },
-        include: { harvestableCrops: true }
-    });
-    res.status(201).json(recipe);
-  } catch (error) {
-    console.error('Create recipe error details:', error);
-    if (error instanceof Error && error.message.includes('Recipe_authorId_fkey')) {
-        return res.status(401).json({ error: 'Je sessie is verlopen of ongeldig. Log opnieuw in om een recept toe te voegen.' });
-    }
-    res.status(500).json({ error: 'Kon recept niet opslaan: ' + (error instanceof Error ? error.message : String(error)) });
-  }
-});
-
-app.patch('/api/recipes/:id', authenticateToken, async (req: any, res) => {
-    try {
-        const { id } = req.params;
-        const { title, content, otherIngredients, cropIds } = req.body;
-        const userId = req.user.id;
-
-        // Check if recipe exists and belongs to user
-        const existingRecipe = await prisma.recipe.findUnique({ where: { id } });
-        if (!existingRecipe) return res.status(404).json({ error: 'Recept niet gevonden.' });
-        if (existingRecipe.authorId !== userId) return res.status(403).json({ error: 'Je kunt alleen je eigen recepten wijzigen.' });
-
-        const recipe = await prisma.recipe.update({
-            where: { id },
-            data: {
-                title,
-                content,
-                otherIngredients: otherIngredients || "",
-                harvestableCrops: {
-                    set: [], // Clear existing
-                    connect: (Array.isArray(cropIds) ? cropIds : []).map((id: string) => ({ id }))
-                }
-            },
-            include: { harvestableCrops: true }
-        });
-
-        res.json(recipe);
-    } catch (error) {
-        console.error('Update recipe error:', error);
-        res.status(500).json({ error: 'Kon recept niet bijwerken.' });
-    }
-});
-
-app.delete('/api/recipes/:id', authenticateToken, async (req: any, res) => {
-    try {
-        const { id } = req.params;
-        const userId = req.user.id;
-        
-        const existingRecipe = await prisma.recipe.findUnique({ where: { id } });
-        if (!existingRecipe) return res.status(404).json({ error: 'Recept niet gevonden.' });
-        if (existingRecipe.authorId !== userId && req.user.role !== 'ADMIN') {
-            return res.status(403).json({ error: 'Je kunt alleen je eigen recepten verwijderen.' });
-        }
-
-        await prisma.recipe.delete({ where: { id } });
-        res.status(204).send();
-    } catch (error) {
-        console.error('Delete recipe error:', error);
-        res.status(500).json({ error: 'Kon recept niet verwijderen.' });
-    }
-});
-
-// Special ranked endpoint
-app.get('/api/recipes/ranked', async (req, res) => {
-    try {
-        const recipes = await prisma.recipe.findMany({
+  res.json(await prisma.field.findMany({
+    include: {
+      blocks: {
+        include: {
+          rotationGroups: true,
+          beds: {
             include: {
-                author: { select: { name: true } },
-                harvestableCrops: true
+              cultivations: {
+                where: { year: targetYear },
+                include: { crop: true }
+              }
             }
-        });
-
-        const ranked = recipes.map(recipe => {
-            const harvestableCount = recipe.harvestableCrops.filter(c => c.isHarvestable).length;
-            return { ...recipe, harvestableCount };
-        }).sort((a, b) => b.harvestableCount - a.harvestableCount);
-
-        res.json(ranked);
-    } catch (error) {
-        res.status(500).json({ error: 'Kon recepten niet rangschikken' });
+          }
+        },
+        orderBy: [{ row: 'asc' }, { col: 'asc' }]
+      }
     }
+  }));
 });
 
-// --- Newsletter ---
-app.post('/api/newsletter', authenticateToken, isAdmin, async (req, res) => {
-    try {
-        const { subject, body } = req.body;
-        await prisma.newsletter.create({ data: { subject, body, sentAt: new Date() } });
-        
-        const members = await prisma.user.findMany({
-            where: { isVerified: true },
-            select: { email: true }
-        });
-        
-        const bccList = members.map(m => m.email).join(',');
-        
-        if (bccList) {
-            await transporter.sendMail({
-                from: '"De Gullegaard" <noreply@gullegaard.be>',
-                bcc: bccList,
-                subject: subject,
-                text: body,
-                html: `<p>${body.replace(/\n/g, '<br/>')}</p>`
-            });
-        }
-        
-        res.json({ message: 'Nieuwsbrief verstuurd' });
-    } catch (error) {
-        console.error('Nieuwsbrief error:', error);
-        res.status(500).json({ error: 'Kon nieuwsbrief niet versturen' });
-    }
+app.post('/api/teeltplan/fields', authenticateToken, isAdmin, async (req, res) => {
+    res.status(201).json(await prisma.field.create({ data: { name: req.body.name } }));
 });
 
-// --- News Posts ---
-app.get('/api/news', async (req, res) => {
-    try {
-        const news = await prisma.newsPost.findMany({
-            orderBy: { createdAt: 'desc' }
-        });
-        console.log(`Fetched ${news.length} news posts`);
-        res.json(news);
-    } catch (error) {
-        console.error('Error fetching news:', error);
-        res.status(500).json({ error: 'Kon nieuwsberichten niet ophalen' });
-    }
+app.post('/api/teeltplan/blocks', authenticateToken, isAdmin, async (req, res) => {
+    const { name, fieldId, row, col, bedCount, length, bedWidth, rotationGroupIds } = req.body;
+    const block = await prisma.block.create({
+      data: { 
+        name, fieldId, row, col, length: parseFloat(length), bedWidth: parseFloat(bedWidth || 0.75),
+        rotationGroups: { connect: (rotationGroupIds || []).map((id: string) => ({ id })) },
+        beds: { create: Array.from({ length: bedCount || 0 }).map((_, i) => ({ name: `Bed ${i + 1}`, width: parseFloat(bedWidth || 0.75), length: parseFloat(length) })) }
+      }
+    });
+    res.status(201).json(block);
 });
+
+app.patch('/api/teeltplan/blocks/:id', authenticateToken, isAdmin, async (req, res) => {
+    const { name, row, col, length, bedWidth, rotationGroupIds } = req.body;
+    const block = await prisma.$transaction(async (tx) => {
+      const data: any = {};
+      if (name !== undefined) data.name = name;
+      if (row !== undefined) data.row = row;
+      if (col !== undefined) data.col = col;
+      if (length !== undefined) data.length = parseFloat(length);
+      if (bedWidth !== undefined) data.bedWidth = parseFloat(bedWidth);
+      if (rotationGroupIds !== undefined) data.rotationGroups = { set: rotationGroupIds.map((id: string) => ({ id })) };
+
+      const updated = await tx.block.update({
+        where: { id: req.params.id },
+        data
+      });
+
+      if (length !== undefined || bedWidth !== undefined) {
+          const bedData: any = {};
+          if (length !== undefined) bedData.length = parseFloat(length);
+          if (bedWidth !== undefined) bedData.width = parseFloat(bedWidth);
+          await tx.bed.updateMany({
+              where: { blockId: updated.id },
+              data: bedData
+          });
+      }
+      return updated;
+    });
+    res.json(block);
+});
+
+// --- Cultivations ---
+app.post('/api/teeltplan/cultivations', authenticateToken, isAdmin, async (req, res) => {
+    const { cropId, bedId, year, quantity, startDate, sowDate, harvestDate, endDate } = req.body;
+    const bed = await prisma.bed.findUnique({ where: { id: bedId } });
+    const overlaps = await prisma.cultivation.findMany({ where: { bedId, OR: [{ startDate: { lte: new Date(endDate) }, endDate: { gte: new Date(startDate) } }] } });
+    const used = overlaps.reduce((s, c) => s + c.quantity, 0);
+    if (bed && (used + parseFloat(quantity)) > bed.length) return res.status(400).json({ error: `Geen plaats meer (${used}m van ${bed.length}m bezet)` });
+    
+    const cult = await prisma.cultivation.create({
+        data: { cropId, bedId, year, quantity: parseFloat(quantity), startDate: new Date(startDate), sowDate: sowDate ? new Date(sowDate) : null, harvestDate: harvestDate ? new Date(harvestDate) : null, endDate: new Date(endDate) }
+    });
+    res.status(201).json(cult);
+});
+
+app.patch('/api/teeltplan/cultivations/:id', authenticateToken, isAdmin, async (req, res) => {
+    const data = { ...req.body };
+    if (data.startDate) data.startDate = new Date(data.startDate);
+    if (data.endDate) data.endDate = new Date(data.endDate);
+    if (data.sowDate) data.sowDate = new Date(data.sowDate);
+    if (data.harvestDate) data.harvestDate = new Date(data.harvestDate);
+    if (data.quantity) data.quantity = parseFloat(data.quantity);
+    // Clean undefined
+    Object.keys(data).forEach(key => data[key] === undefined && delete data[key]);
+    res.json(await prisma.cultivation.update({ where: { id: req.params.id }, data }));
+});
+
+app.delete('/api/teeltplan/cultivations/:id', authenticateToken, isAdmin, async (req, res) => {
+    await prisma.cultivation.delete({ where: { id: req.params.id } }); res.status(204).send();
+});
+
+// --- Tasks ---
+app.get('/api/teeltplan/tasks/weekly', async (req, res) => {
+    const { date } = req.query;
+    const d = date ? new Date(date as string) : new Date();
+    const start = new Date(d); start.setDate(d.getDate() - d.getDay() + (d.getDay() === 0 ? -6 : 1)); start.setHours(0,0,0,0);
+    const end = new Date(start); end.setDate(start.getDate() + 6); end.setHours(23,59,59,999);
+    res.json(await prisma.cultivationTask.findMany({ where: { scheduledDate: { gte: start, lte: end } }, include: { cultivation: { include: { crop: true, bed: { include: { block: true } } } } }, orderBy: [{ scheduledDate: 'asc' }] }));
+});
+
+app.patch('/api/teeltplan/tasks/:id', authenticateToken, isAdmin, async (req, res) => {
+    res.json(await prisma.cultivationTask.update({ where: { id: req.params.id }, data: { status: req.body.status } }));
+});
+
+// --- Other ---
+app.get('/api/teeltplan/families', async (req, res) => res.json(await prisma.cropFamily.findMany()));
+app.get('/api/teeltplan/available-years', async (req, res) => {
+    const years = await prisma.cultivation.groupBy({ by: ['year'], orderBy: { year: 'asc' } });
+    const list = years.map(y => y.year);
+    if (list.length === 0) list.push(new Date().getFullYear());
+    res.json(list);
+});
+app.get('/api/teeltplan/rotation-groups', async (req, res) => res.json(await prisma.rotationGroup.findMany()));
+
+app.post('/api/teeltplan/clone-year', authenticateToken, isAdmin, async (req, res) => {
+    const { sourceYear, targetYear, mapping } = req.body;
+    await prisma.cultivation.deleteMany({ where: { year: targetYear } });
+    const source = await prisma.cultivation.findMany({ where: { year: sourceYear }, include: { bed: true } });
+    const blocks = await prisma.block.findMany({ include: { beds: true } });
+    for (const c of source) {
+        const targetBlockId = mapping[c.bed.blockId];
+        if (!targetBlockId) continue;
+        const targetBlock = blocks.find(b => b.id === targetBlockId);
+        const targetBed = targetBlock?.beds.find(b => b.name === c.bed.name) || targetBlock?.beds[0];
+        if (!targetBed) continue;
+        const shift = (d: Date | null) => { if (!d) return null; const nd = new Date(d); nd.setFullYear(nd.getFullYear() + (targetYear - sourceYear)); return nd; };
+        await prisma.cultivation.create({ data: { cropId: c.cropId, bedId: targetBed.id, year: targetYear, quantity: c.quantity, startDate: shift(c.startDate)!, sowDate: shift(c.sowDate), harvestDate: shift(c.harvestDate), endDate: shift(c.endDate) } });
+    }
+    res.json({ ok: true });
+});
+
+app.get('/api/recipes/ranked', async (req, res) => {
+    const now = new Date(), soon = new Date(); soon.setDate(now.getDate() + 14);
+    const activeYearSetting = await prisma.systemSetting.findUnique({ where: { key: 'active_year' } });
+    const targetYear = activeYearSetting ? parseInt(activeYearSetting.value) : now.getFullYear();
+    const active = await prisma.cultivation.findMany({ where: { year: targetYear, startDate: { lte: now }, endDate: { gte: now }, harvestDate: { lte: soon } }, select: { cropId: true } });
+    const harvestableIds = new Set(active.map(c => c.cropId));
+    const recipes = await prisma.recipe.findMany({ include: { author: { select: { name: true } }, harvestableCrops: true } });
+    const ranked = recipes.map(r => {
+        const crops = r.harvestableCrops.map(c => ({ ...c, isHarvestable: harvestableIds.has(c.id) }));
+        return { ...r, harvestableCrops: crops, harvestableCount: crops.filter(c => c.isHarvestable).length };
+    }).sort((a, b) => b.harvestableCount - a.harvestableCount || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    const page = parseInt(req.query.page as string) || 1, limit = 12;
+    res.json({ recipes: ranked.slice((page-1)*limit, page*limit), pagination: { total: ranked.length, page, totalPages: Math.ceil(ranked.length/limit) } });
+});
+
+app.get('/api/news', async (req, res) => res.json(await prisma.newsPost.findMany({ orderBy: { createdAt: 'desc' } })));
 
 app.post('/api/news', authenticateToken, isAdmin, async (req, res) => {
     try {
@@ -602,21 +247,63 @@ app.post('/api/news', authenticateToken, isAdmin, async (req, res) => {
             data: { title, content, imageUrl }
         });
         res.status(201).json(post);
-    } catch (error) {
-        res.status(500).json({ error: 'Kon nieuwsbericht niet opslaan' });
-    }
+    } catch (e) { res.status(500).json({ error: 'Fout bij aanmaken nieuwsbericht' }); }
 });
 
 app.delete('/api/news/:id', authenticateToken, isAdmin, async (req, res) => {
     try {
-        const { id } = req.params;
-        await prisma.newsPost.delete({ where: { id } });
+        await prisma.newsPost.delete({ where: { id: req.params.id } });
         res.status(204).send();
-    } catch (error) {
-        res.status(500).json({ error: 'Kon nieuwsbericht niet verwijderen' });
-    }
+    } catch (e) { res.status(500).json({ error: 'Fout bij verwijderen nieuwsbericht' }); }
 });
 
-app.listen(port, () => {
-  console.log(`Backend server running on http://localhost:${port}`);
+// --- Admin Member Management ---
+app.get('/api/admin/members', authenticateToken, isAdmin, async (req, res) => {
+    try {
+        const activeYearSetting = await prisma.systemSetting.findUnique({ where: { key: 'active_year' } });
+        const targetYear = activeYearSetting ? parseInt(activeYearSetting.value) : new Date().getFullYear();
+
+        const memberships = await prisma.membership.findMany({
+            where: { year: targetYear },
+            include: { 
+                user: { select: { id: true, name: true, email: true } },
+                familyMembers: true
+            }
+        });
+
+        const members = memberships.map(m => ({
+            id: m.id,
+            name: m.user.name,
+            email: m.user.email,
+            isMember: true,
+            hasPaid: m.isPaid,
+            totalFee: m.totalFee,
+            familyComposition: {
+                adults: m.familyMembers.filter(fm => fm.type === 'ADULT').length,
+                children: m.familyMembers.filter(fm => fm.type === 'CHILD').map(fm => ({ age: fm.age }))
+            },
+            registrationDate: m.createdAt
+        }));
+
+        res.json(members);
+    } catch (e) { res.status(500).json({ error: 'Fout bij ophalen deelnemers' }); }
 });
+
+app.patch('/api/admin/members/:id/payment', authenticateToken, isAdmin, async (req, res) => {
+    try {
+        const membership = await prisma.membership.update({
+            where: { id: req.params.id },
+            data: { isPaid: req.body.isPaid }
+        });
+        res.json(membership);
+    } catch (e) { res.status(500).json({ error: 'Fout bij bijwerken betaling' }); }
+});
+
+app.post('/api/login', async (req, res) => {
+  const { email, password } = req.body;
+  const user = await prisma.user.findUnique({ where: { email } });
+  if (!user || !(await bcrypt.compare(password, user.password || ''))) return res.status(401).json({ error: 'Ongeldige gegevens' });
+  res.json({ user: { id: user.id, name: user.name, role: user.role }, token: jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '8h' }) });
+});
+
+app.listen(port, () => console.log(`Server op ${port}`));
