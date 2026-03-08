@@ -1,0 +1,24 @@
+**/node_modules
+**/dist
+.git
+.env
+*.db
+*.log
+npm-debug.log*
+.vscode
+.idea
+*.sh
+*.txt
+# Allow source files
+!**/*.ts
+!**/*.tsx
+!**/*.js
+!**/*.jsx
+!**/*.json
+!**/*.prisma
+!**/*.css
+!**/*.html
+!**/*.svg
+!**/*.png
+!**/*.jpg
+!**/*.jpeg
