@@ -5,7 +5,7 @@ set -e
 
 # Default branch is main, but can be overridden
 BRANCH=${BRANCH:-main}
-REPO_DIR="/home/joachim/zelfoogst_mijn-csa" # Update this to your prod path
+REPO_DIR="/home/joachim/gullegaard" # Update this to your prod path
 
 echo "🚀 Starting production deployment of De Zelfoogsttuin..."
 

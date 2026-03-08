@@ -4,7 +4,7 @@
 set -e
 
 # Repository URL
-REPO_URL="git@github.com:jvm985/zelfoogst_mijn-csa.git"
+REPO_URL="git@github.com:jvm985/gullegaard.git"
 
 echo "🚀 Starting git initialization and push to GitHub..."
 
