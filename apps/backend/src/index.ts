@@ -17,6 +17,21 @@ const JWT_SECRET = process.env.JWT_SECRET || 'secret';
 app.use(cors());
 app.use(express.json());
 
+// --- Email Setup ---
+let transporter: nodemailer.Transporter;
+async function setupEmail() {
+    // For development, use ethereal.email
+    const testAccount = await nodemailer.createTestAccount();
+    transporter = nodemailer.createTransport({
+        host: "smtp.ethereal.email",
+        port: 587,
+        secure: false,
+        auth: { user: testAccount.user, pass: testAccount.pass },
+    });
+    console.log('Test email account created:', testAccount.user);
+}
+setupEmail();
+
 // --- Middleware ---
 const authenticateToken = (req: any, res: any, next: any) => {
   const authHeader = req.headers['authorization'];
@@ -36,6 +51,118 @@ const isAdmin = (req: any, res: any, next: any) => {
 
 // --- Routes ---
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
+
+// --- Auth & Signup ---
+app.post('/api/signup', async (req, res) => {
+    const { name, email } = req.body;
+    try {
+        const existing = await prisma.user.findUnique({ where: { email } });
+        if (existing && existing.password) return res.status(400).json({ error: 'E-mailadres is al in gebruik' });
+
+        const token = jwt.sign({ name, email }, JWT_SECRET, { expiresIn: '24h' });
+        const url = `${req.headers.origin}/complete-signup?token=${token}`;
+
+        await transporter.sendMail({
+            from: '"De Zelfoogsttuin" <noreply@mijn-csa.be>',
+            to: email,
+            subject: 'Activeer je account bij De Zelfoogsttuin',
+            html: `<h1>Welkom ${name}!</h1><p>Klik op de onderstaande link om je account te activeren en je wachtwoord in te stellen:</p><a href="${url}">${url}</a>`
+        });
+
+        res.json({ message: 'Bevestigingsmail verzonden' });
+    } catch (e) { res.status(500).json({ error: 'Fout bij registratie' }); }
+});
+
+app.post('/api/auth/verify-signup-token', async (req, res) => {
+    const { token } = req.body;
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET) as any;
+        res.json({ name: decoded.name, email: decoded.email });
+    } catch (e) { res.status(400).json({ error: 'Ongeldige of verlopen link' }); }
+});
+
+app.post('/api/auth/complete-signup', async (req, res) => {
+    const { token, password } = req.body;
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET) as any;
+        const hashedPassword = await bcrypt.hash(password, 10);
+        
+        const user = await prisma.user.upsert({
+            where: { email: decoded.email },
+            update: { name: decoded.name, password: hashedPassword, isVerified: true },
+            create: { email: decoded.email, name: decoded.name, password: hashedPassword, isVerified: true, role: 'USER' }
+        });
+
+        res.json({ message: 'Account succesvol geactiveerd' });
+    } catch (e) { res.status(400).json({ error: 'Fout bij activeren account' }); }
+});
+
+app.post('/api/login', async (req, res) => {
+  const { email, password } = req.body;
+  const user = await prisma.user.findUnique({ where: { email } });
+  if (!user || !user.password || !(await bcrypt.compare(password, user.password))) {
+      return res.status(401).json({ error: 'Ongeldige gegevens' });
+  }
+  res.json({ user: { id: user.id, name: user.name, role: user.role }, token: jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '8h' }) });
+});
+
+// --- Membership ---
+app.get('/api/membership/status', authenticateToken, async (req, res) => {
+    try {
+        const activeYearSetting = await prisma.systemSetting.findUnique({ where: { key: 'active_year' } });
+        const targetYear = activeYearSetting ? parseInt(activeYearSetting.value) : new Date().getFullYear();
+
+        const membership = await prisma.membership.findFirst({
+            where: { userId: req.user.id, year: targetYear },
+            include: { familyMembers: true }
+        });
+
+        if (!membership) return res.json({ isRegistered: false });
+
+        res.json({
+            isRegistered: true,
+            isPaid: membership.isPaid,
+            totalPrice: membership.totalFee,
+            adults: membership.familyMembers.filter(fm => fm.type === 'ADULT'),
+            children: membership.familyMembers.filter(fm => fm.type === 'CHILD')
+        });
+    } catch (e) { res.status(500).json({ error: 'Fout bij ophalen status' }); }
+});
+
+app.post('/api/membership', authenticateToken, async (req, res) => {
+    const { adults, children, totalPrice } = req.body;
+    try {
+        const activeYearSetting = await prisma.systemSetting.findUnique({ where: { key: 'active_year' } });
+        const targetYear = activeYearSetting ? parseInt(activeYearSetting.value) : new Date().getFullYear();
+
+        // Check if already paid
+        const existing = await prisma.membership.findFirst({ where: { userId: req.user.id, year: targetYear } });
+        if (existing && existing.isPaid) return res.status(400).json({ error: 'Inschrijving is al betaald en kan niet meer gewijzigd worden' });
+
+        await prisma.$transaction(async (tx) => {
+            if (existing) {
+                await tx.familyMember.deleteMany({ where: { membershipId: existing.id } });
+                await tx.membership.delete({ where: { id: existing.id } });
+            }
+
+            await tx.membership.create({
+                data: {
+                    userId: req.user.id,
+                    year: targetYear,
+                    totalFee: totalPrice,
+                    familyMembers: {
+                        create: [
+                            ...adults.map((a: any) => ({ type: 'ADULT', tier: a.tier.toUpperCase(), price: a.price })),
+                            ...children.map((c: any) => ({ type: 'CHILD', age: c.age, price: c.price }))
+                        ]
+                    }
+                }
+            });
+        });
+
+        res.json({ message: 'Inschrijving succesvol opgeslagen' });
+    } catch (e) { res.status(500).json({ error: 'Fout bij opslaan inschrijving' }); }
+});
 
 // --- System Settings ---
 app.get('/api/settings', async (req, res) => {
@@ -185,7 +312,6 @@ app.patch('/api/teeltplan/cultivations/:id', authenticateToken, isAdmin, async (
     Object.keys(data).forEach(key => data[key] === undefined && delete data[key]);
     
     const updated = await prisma.cultivation.update({ where: { id: req.params.id }, data });
-    // Regenerate tasks on date changes
     if (data.startDate || data.sowDate || data.harvestDate || data.endDate) {
         await prisma.cultivationTask.deleteMany({ where: { cultivationId: updated.id } });
         await generateTasks(updated);
@@ -277,13 +403,6 @@ app.get('/api/admin/members', authenticateToken, isAdmin, async (req, res) => {
 app.patch('/api/admin/members/:id/payment', authenticateToken, isAdmin, async (req, res) => {
     const membership = await prisma.membership.update({ where: { id: req.params.id }, data: { isPaid: req.body.isPaid } });
     res.json(membership);
-});
-
-app.post('/api/login', async (req, res) => {
-  const { email, password } = req.body;
-  const user = await prisma.user.findUnique({ where: { email } });
-  if (!user || !(await bcrypt.compare(password, user.password || ''))) return res.status(401).json({ error: 'Ongeldige gegevens' });
-  res.json({ user: { id: user.id, name: user.name, role: user.role }, token: jwt.sign({ id: user.id, email: user.email, role: user.role }, JWT_SECRET, { expiresIn: '8h' }) });
 });
 
 app.listen(port, () => console.log(`Server op ${port}`));

@@ -1,0 +1,104 @@
+# Technische Blueprint: De Zelfoogsttuin (Mijn CSA)
+
+Deze blueprint bevat alle technische en functionele specificaties om de applicatie "De Zelfoogsttuin" (voorheen Gullegaard) from scratch te herbouwen.
+
+## 1. Projectoverzicht & Stack
+- **Type:** Monorepo (npm workspaces)
+- **Frontend:** React 18, Vite, TypeScript, Tailwind CSS, React Router DOM, Lucide React (iconen).
+- **Backend:** Node.js, Express, TypeScript, Prisma ORM, JSON Web Tokens (JWT), Bcrypt.
+- **Database:** PostgreSQL.
+- **Infrastructuur:** Docker & Docker Compose (Frontend op poort 7000 tbv Nginx proxy, Backend op poort 3000).
+
+## 2. Database Schema (Prisma Data Modellen)
+De core van de applicatie is opgebouwd rond de volgende relationele modellen:
+
+- **User:** `id`, `email`, `password`, `name`, `role` (ADMIN/USER), `isVerified`.
+- **Membership:** `id`, `userId`, `year`, `totalFee`, `isPaid`.
+- **FamilyMember:** `id`, `membershipId`, `type` (ADULT/CHILD), `age`, `price`.
+- **SystemSetting:** `id`, `key` (bijv. 'active_year'), `value`.
+- **CropFamily:** `id`, `name` (Botanische familie).
+- **RotationGroup:** `id`, `name` (Rotatiegroep, bijv. Kool, Look).
+- **Crop:** `id`, `name`, `familyId`, `rotationGroupId`, `nutrientLevel`, `daysToMaturity`, `minTemp`, `rowSpacing`, `plantSpacing`, `seedsPerSqm`, `pricePerSeedSqm`, `sowStart`, `sowEnd`.
+- **Field:** `id`, `name`.
+- **Block:** `id`, `name`, `fieldId`, `row`, `col`, `length`, `bedWidth` (standaard 0.75m). Heeft een m:n relatie met `RotationGroup`.
+- **Bed:** `id`, `name`, `width`, `length`, `blockId`.
+- **Cultivation (Teelt):** `id`, `cropId`, `bedId`, `year`, `quantity` (lengte in meters), `startDate` (prep), `sowDate` (plant/zaai), `harvestDate` (start oogst), `endDate`.
+- **CultivationTask:** `id`, `cultivationId`, `type` (PREPARATION/SOW_OUTDOORS/HARVEST), `description`, `scheduledDate`, `status` (TODO/DONE).
+- **Recipe:** `id`, `title`, `content` (bereiding), `otherIngredients`, `authorId`. M:N relatie met `Crop` (harvestableCrops).
+- **NewsPost:** `id`, `title`, `content`, `imageUrl`, `createdAt`.
+
+## 3. Core Business Logica & API Endpoints
+
+### 3.1. Automatische Taakgeneratie
+Bij het aanmaken of updaten van een `Cultivation` (POST/PATCH `/api/teeltplan/cultivations`) genereert de backend automatisch 3 taken:
+1.  **PREPARATION:** op `startDate`.
+2.  **SOW_OUTDOORS:** op `sowDate`.
+3.  **HARVEST:** op `harvestDate`.
+
+### 3.2. Recepten Ranking (De Slimme Kookinspiratie)
+- **Endpoint:** `GET /api/recipes/ranked`
+- **Logica:** Haalt het `active_year` op uit de settings. Kijkt welke teelten (`Cultivation`) momenteel een actieve oogstperiode hebben (`now >= harvestDate` en `now <= endDate`).
+- Matcht deze actieve gewassen met de gekoppelde gewassen aan recepten.
+- Sorteert recepten op basis van het aantal momenteel oogstbare gewassen (`harvestableCount`) in dat recept.
+- Paginatie (12 per pagina) is ingebouwd.
+
+### 3.3. Seizoen Rotatie (Clone Year)
+- **Endpoint:** `POST /api/teeltplan/clone-year`
+- **Logica:** Kopieert alle teelten van een `sourceYear` naar een `targetYear`.
+- Gebruikt een mapping-object meegegeven vanuit de frontend om te bepalen naar welk nieuw blok de teelten van een oud blok moeten verschuiven (voor vruchtafwisseling).
+- Datums worden automatisch 1 jaar opgeschoven.
+
+### 3.4. Calculatie Plantgoed
+Dit gebeurt in de Frontend (in de Bestellijst en Plannings-modal):
+- **Oppervlakte:** `Teelt lengte (quantity)` * `Blok bedWidth`.
+- **Aantal planten/zaden:** `Oppervlakte` * `Crop.seedsPerSqm`.
+- **Kosten:** `Oppervlakte` * `Crop.pricePerSeedSqm`.
+
+## 4. Frontend Architectuur (Schermen & Features)
+
+### 4.1. MainLayout & Navigatie
+- Bevat de hoofdnavigatie en een mobiel hamburgermenu.
+- Controleert via JWT in `AuthContext` of de gebruiker admin-rechten heeft om de tabs "Teeltplan" en "Beheer" te tonen.
+
+### 4.2. Oogstkaart (`HarvestMap.tsx`)
+- Toont een visuele grid van de blokken (a.d.h.v. `row` en `col`).
+- **Status Logica:**
+  - `VOLTOOID`: Huidige datum > `endDate`.
+  - `OOGSTKLAAR`: Huidige datum tussen `harvestDate` en `endDate`. (Krijgt een stuiterend groen blaadje icoon).
+  - `GROEIEND`: Huidige datum tussen `startDate` en `harvestDate`.
+  - `GEPLAND`: Huidige datum < `startDate`.
+
+### 4.3. Teeltplan (`Teeltplan.tsx`)
+Een geavanceerde tool voor de boer met 4 tabs, gefilterd per Blok via een strakke top-header.
+- **Tijdlijn (Gantt Chart):** Een visuele weergave van het jaar (Jan-Dec).
+  - Alternerende bed-achtergrondkleuren (wit / lichtgrijs).
+  - **Lanes Logica:** Als teelten op hetzelfde bed overlappen in tijd, berekent een functie (`getStackedCultivations`) dynamisch verschillende "lanes" (verdiepingen) zodat de balkjes visueel boven elkaar worden getekend en niet overlappen.
+  - Drag & Drop: Teelten kunnen met de muis versleept worden (verticaal naar andere bedden, horizontaal in tijd).
+- **Overzicht:** Kaarten per bed met de actieve teelten en snelle bewerk/wis knoppen.
+- **Bestellijst:** Een tabel die alle teelten van het jaar groepeert per gewas, chronologisch sorteert, en de oppervlakte, hoeveelheid plantgoed en kosten toont, inclusief subtotalen per gewas en een grand total.
+- **Taaklijst:** Een weekoverzicht van de automatisch gegenereerde taken, met mogelijkheid om ze af te vinken.
+
+### 4.4. Beheer Dashboard (`AdminDashboard.tsx`)
+De gecentraliseerde instellingen-hub:
+- **Deelnemers:** Inzien van leden, gezinsgrootte, en toggle voor betaalstatus.
+- **Seizoen:** Instellen van het globale `active_year` en het triggeren van de Rotatie/Clone-tool.
+- **Gewassen:** CRUD voor de botanische bibliotheek, inclusief plantgoed-parameters. Lijst is alfabetisch en filterbaar op rotatiegroep.
+- **Veldindeling:** Aanmaken/wijzigen van velden en blokken, met instellingen voor bedden-aantal, bed-lengte en bed-breedte.
+- **Nieuws:** Plaatsen en verwijderen van nieuwsberichten voor de homepagina.
+
+## 5. Bootstrapping & Initialisatie
+
+De applicatie is "self-contained" en haalt geen data meer van het internet bij het opstarten.
+- **Bestanden:** De root (`apps/backend`) bevat `gewassen.json` (47 botanische profielen) en `recepten.json` (424 opgeschoonde recepten).
+- **`seed.ts`:** Maakt Admin en Jan (testuser) aan inclusief lidmaatschappen. Laadt alle gewassen in en koppelt ze aan hun families en rotatiegroepen. Leest `recepten.json` in en koppelt deze via een slimme fuzzy match (waarbij "vroeg/laat/zomer/winter" genegeerd wordt) aan de juiste database-gewassen. Stelt `active_year` in op 2026.
+- **`fix_teeltplan.ts`:** Een Master-script dat direct 41 realistische demonstratie-teelten genereert over de 8 blokken (inclusief successieteelt, groenbemesters en meerjarige gewassen), wat direct ook de taken genereert.
+
+## 6. Deployment Workflow
+- **Script:** `deploy.sh`.
+- Trek nieuwe code van branch `main`.
+- Bouwt containers vanuit de project-root (context: `.`).
+- Wacht op PostgreSQL.
+- Voert `npx prisma db push`, `npx prisma db seed` en `npx ts-node fix_teeltplan.ts` uit in de backend container.
+- **Nginx routing:** Host luistert op domein (443) en doet een reverse proxy naar poort 7000 (frontend container). API calls in Vite zijn geproxied naar de backend container (poort 3000).
+
+*(Einde document)*
