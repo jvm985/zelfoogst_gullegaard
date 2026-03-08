@@ -107,7 +107,7 @@ app.post('/api/login', async (req, res) => {
 });
 
 // --- Membership ---
-app.get('/api/membership/status', authenticateToken, async (req, res) => {
+app.get('/api/membership/status', authenticateToken, async (req: any, res) => {
     try {
         const activeYearSetting = await prisma.systemSetting.findUnique({ where: { key: 'active_year' } });
         const targetYear = activeYearSetting ? parseInt(activeYearSetting.value) : new Date().getFullYear();
@@ -129,7 +129,7 @@ app.get('/api/membership/status', authenticateToken, async (req, res) => {
     } catch (e) { res.status(500).json({ error: 'Fout bij ophalen status' }); }
 });
 
-app.post('/api/membership', authenticateToken, async (req, res) => {
+app.post('/api/membership', authenticateToken, async (req: any, res) => {
     const { adults, children, totalPrice } = req.body;
     try {
         const activeYearSetting = await prisma.systemSetting.findUnique({ where: { key: 'active_year' } });
