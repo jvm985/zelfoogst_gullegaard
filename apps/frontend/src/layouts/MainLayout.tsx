@@ -97,7 +97,7 @@ const MainLayout: React.FC = () => {
                   onClick={() => setIsMobileMenuOpen(false)}
                   className={({ isActive }) => `flex items-center gap-3 p-4 rounded-xl font-bold transition-all ${isActive ? 'bg-green-50 text-green-700' : 'text-slate-600 hover:bg-slate-50'}`}
                 >
-                  <span className={({ isActive }: any) => isActive ? 'text-green-600' : 'text-slate-400'}>{item.icon}</span>
+                  {item.icon}
                   {item.label}
                 </NavLink>
               ))}

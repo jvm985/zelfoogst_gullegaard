@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Map as MapIcon, CheckCircle, Clock, Leaf, AlertTriangle, ChevronDown, Calendar, ArrowRight } from 'lucide-react';
+import { Map as MapIcon, Clock, Leaf, AlertTriangle, Calendar } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 interface Crop {

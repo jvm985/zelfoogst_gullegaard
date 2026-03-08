@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Users, Send, Eye, CheckCircle, XCircle, Calendar, Trash2, Sprout, RefreshCw, ArrowRight, ShieldCheck, Grid3X3, Plus, Edit2, Scale, Filter, X } from 'lucide-react';
+import { Settings, Users, Eye, CheckCircle, XCircle, Calendar, Trash2, Sprout, RefreshCw, ArrowRight, ShieldCheck, Grid3X3, Plus, Edit2, Filter, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 interface Member {

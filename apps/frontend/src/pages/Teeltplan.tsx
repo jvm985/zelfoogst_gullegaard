@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef, Fragment } from 'react';
 import { 
-  Calendar, Map as MapIcon, ClipboardList, Plus, CheckCircle, Clock, AlertTriangle,
-  ChevronRight, ChevronLeft, Filter, Leaf, Settings, Trash2, Save, Grid3X3,
-  Move, X, Edit2, ShieldCheck, RefreshCw, ArrowRight, ChevronDown, Sprout,
-  Thermometer, Ruler, BarChart3, Scale, Euro, ShoppingCart
+  Map as MapIcon, ClipboardList, Plus, CheckCircle, Leaf,
+  ChevronRight, ChevronLeft, Trash2,
+  X, Edit2, ShieldCheck, ChevronDown, Sprout,
+  BarChart3, Scale, ShoppingCart
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -26,11 +26,6 @@ interface Cultivation {
   harvestDate: string | null; endDate: string;
 }
 
-const NUTRIENT_LEVELS = [
-  { value: 1, label: 'Sluimerend (Laag)', color: 'bg-blue-100 text-blue-700' },
-  { value: 2, label: 'Gemiddeld', color: 'bg-green-100 text-green-700' },
-  { value: 3, label: 'Gulzig (Hoog)', color: 'bg-orange-100 text-orange-700' }
-];
 const MONTHS = ['Jan', 'Feb', 'Mrt', 'Apr', 'Mei', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dec'];
 
 const Teeltplan = () => {
