@@ -18,8 +18,8 @@ Het project is een monorepo gebouwd met:
 
 ### 2. Installatie
 ```bash
-git clone git@github.com:jvm985/gullegaard.git
-cd gullegaard
+git clone git@github.com:jvm985/zelfoogst_gullegaard.git
+cd zelfoogst_gullegaard
 npm install
 ```
 
