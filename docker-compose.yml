@@ -13,7 +13,9 @@ services:
       - mijn-csa-network
 
   backend:
-    build: ./apps/backend
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
     container_name: mijn-csa-backend
     restart: always
     environment:
@@ -30,7 +32,9 @@ services:
       - mijn-csa-network
 
   frontend:
-    build: ./apps/frontend
+    build:
+      context: .
+      dockerfile: apps/frontend/Dockerfile
     container_name: mijn-csa-frontend
     restart: always
     ports:

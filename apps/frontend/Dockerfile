@@ -3,21 +3,11 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copy workspace and lock files
-COPY package.json package-lock.json ./
-COPY apps/frontend/package.json ./apps/frontend/
-COPY apps/frontend/tsconfig.json ./apps/frontend/
-COPY apps/frontend/tsconfig.app.json ./apps/frontend/
-COPY apps/frontend/tsconfig.node.json ./apps/frontend/
-COPY apps/frontend/vite.config.ts ./apps/frontend/
-COPY apps/frontend/postcss.config.js ./apps/frontend/
-COPY apps/frontend/tailwind.config.js ./apps/frontend/
+# Copy the entire project
+COPY . .
 
-# Install dependencies
+# Install dependencies (from root)
 RUN npm install
-
-# Copy source
-COPY apps/frontend ./apps/frontend
 
 # Build frontend
 WORKDIR /app/apps/frontend
@@ -29,7 +19,7 @@ FROM nginx:alpine
 # Copy build files from builder stage
 COPY --from=builder /app/apps/frontend/dist /usr/share/nginx/html
 
-# Optional: Add nginx config if needed for SPA routing
+# SPA configuration for Nginx
 RUN echo 'server { \
     listen 80; \
     location / { \
@@ -38,7 +28,7 @@ RUN echo 'server { \
         try_files $uri $uri/ /index.html; \
     } \
     location /api { \
-        proxy_pass http://backend:3001; \
+        proxy_pass http://backend:3000; \
     } \
 }' > /etc/nginx/conf.d/default.conf
 

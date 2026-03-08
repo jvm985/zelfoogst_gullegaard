@@ -3,10 +3,10 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copy the entire project to ensure monorepo structure is preserved
+# Copy the entire project
 COPY . .
 
-# Install all dependencies
+# Install all dependencies (from root)
 RUN npm install
 
 # Generate Prisma Client
@@ -21,8 +21,7 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Copy the entire app directory from builder to production stage
-# to ensure all hoisted dependencies and workspace symlinks are preserved
+# Copy the entire build context
 COPY --from=builder /app /app
 
 EXPOSE 3001
