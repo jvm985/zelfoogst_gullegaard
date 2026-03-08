@@ -5,9 +5,10 @@ set -e
 
 # Default branch is main, but can be overridden
 BRANCH=${BRANCH:-main}
-REPO_DIR="/home/joachim/zelfoogst_gullegaard" # Update this to your prod path
+REPO_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+cd "$REPO_DIR"
 
-echo "🚀 Starting production deployment of De Zelfoogsttuin..."
+echo "🚀 Starting production deployment in $REPO_DIR..."
 
 if [ -d ".git" ]; then
     echo "📂 Pulling latest changes from GitHub ($BRANCH branch)..."

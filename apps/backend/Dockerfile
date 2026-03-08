@@ -24,7 +24,7 @@ WORKDIR /app
 # Copy the entire build context
 COPY --from=builder /app /app
 
-EXPOSE 3001
+EXPOSE 3000
 
 # Start the app from the backend directory
 WORKDIR /app/apps/backend

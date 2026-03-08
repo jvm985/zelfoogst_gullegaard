@@ -38,7 +38,7 @@ services:
     container_name: mijn-csa-frontend
     restart: always
     ports:
-      - "80:80"
+      - "3005:80"
     depends_on:
       - backend
     networks:
