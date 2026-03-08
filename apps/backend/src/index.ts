@@ -70,7 +70,6 @@ app.patch('/api/crops/:id', authenticateToken, isAdmin, async (req, res) => {
   const data = { ...req.body };
   if (data.seedsPerSqm) data.seedsPerSqm = parseFloat(data.seedsPerSqm);
   if (data.pricePerSeedSqm) data.pricePerSeedSqm = parseFloat(data.pricePerSeedSqm);
-  // Clean undefined fields for exactOptionalPropertyTypes
   Object.keys(data).forEach(key => data[key] === undefined && delete data[key]);
   const crop = await prisma.crop.update({ where: { id: req.params.id }, data });
   res.json(crop);
@@ -134,24 +133,32 @@ app.patch('/api/teeltplan/blocks/:id', authenticateToken, isAdmin, async (req, r
       if (bedWidth !== undefined) data.bedWidth = parseFloat(bedWidth);
       if (rotationGroupIds !== undefined) data.rotationGroups = { set: rotationGroupIds.map((id: string) => ({ id })) };
 
-      const updated = await tx.block.update({
-        where: { id: req.params.id },
-        data
-      });
+      const updated = await tx.block.update({ where: { id: req.params.id }, data });
 
       if (length !== undefined || bedWidth !== undefined) {
           const bedData: any = {};
           if (length !== undefined) bedData.length = parseFloat(length);
           if (bedWidth !== undefined) bedData.width = parseFloat(bedWidth);
-          await tx.bed.updateMany({
-              where: { blockId: updated.id },
-              data: bedData
-          });
+          await tx.bed.updateMany({ where: { blockId: updated.id }, data: bedData });
       }
       return updated;
     });
     res.json(block);
 });
+
+// --- Tasks Generator Helper ---
+async function generateTasks(cult: any) {
+    const tasks = [
+        { type: 'PREPARATION' as any, date: new Date(cult.startDate), desc: 'Bed voorbereiden en bemesten' },
+        { type: 'SOW_OUTDOORS' as any, date: cult.sowDate ? new Date(cult.sowDate) : new Date(cult.startDate), desc: 'Gewas zaaien of uitplanten' },
+        { type: 'HARVEST' as any, date: cult.harvestDate ? new Date(cult.harvestDate) : new Date(cult.endDate), desc: 'Start van de oogstperiode' }
+    ];
+    for (const t of tasks) {
+        await prisma.cultivationTask.create({
+            data: { cultivationId: cult.id, type: t.type, scheduledDate: t.date, description: t.desc, status: 'TODO' }
+        });
+    }
+}
 
 // --- Cultivations ---
 app.post('/api/teeltplan/cultivations', authenticateToken, isAdmin, async (req, res) => {
@@ -164,6 +171,7 @@ app.post('/api/teeltplan/cultivations', authenticateToken, isAdmin, async (req, 
     const cult = await prisma.cultivation.create({
         data: { cropId, bedId, year, quantity: parseFloat(quantity), startDate: new Date(startDate), sowDate: sowDate ? new Date(sowDate) : null, harvestDate: harvestDate ? new Date(harvestDate) : null, endDate: new Date(endDate) }
     });
+    await generateTasks(cult);
     res.status(201).json(cult);
 });
 
@@ -174,9 +182,15 @@ app.patch('/api/teeltplan/cultivations/:id', authenticateToken, isAdmin, async (
     if (data.sowDate) data.sowDate = new Date(data.sowDate);
     if (data.harvestDate) data.harvestDate = new Date(data.harvestDate);
     if (data.quantity) data.quantity = parseFloat(data.quantity);
-    // Clean undefined
     Object.keys(data).forEach(key => data[key] === undefined && delete data[key]);
-    res.json(await prisma.cultivation.update({ where: { id: req.params.id }, data }));
+    
+    const updated = await prisma.cultivation.update({ where: { id: req.params.id }, data });
+    // Regenerate tasks on date changes
+    if (data.startDate || data.sowDate || data.harvestDate || data.endDate) {
+        await prisma.cultivationTask.deleteMany({ where: { cultivationId: updated.id } });
+        await generateTasks(updated);
+    }
+    res.json(updated);
 });
 
 app.delete('/api/teeltplan/cultivations/:id', authenticateToken, isAdmin, async (req, res) => {
@@ -218,7 +232,8 @@ app.post('/api/teeltplan/clone-year', authenticateToken, isAdmin, async (req, re
         const targetBed = targetBlock?.beds.find(b => b.name === c.bed.name) || targetBlock?.beds[0];
         if (!targetBed) continue;
         const shift = (d: Date | null) => { if (!d) return null; const nd = new Date(d); nd.setFullYear(nd.getFullYear() + (targetYear - sourceYear)); return nd; };
-        await prisma.cultivation.create({ data: { cropId: c.cropId, bedId: targetBed.id, year: targetYear, quantity: c.quantity, startDate: shift(c.startDate)!, sowDate: shift(c.sowDate), harvestDate: shift(c.harvestDate), endDate: shift(c.endDate) } });
+        const newCult = await prisma.cultivation.create({ data: { cropId: c.cropId, bedId: targetBed.id, year: targetYear, quantity: c.quantity, startDate: shift(c.startDate)!, sowDate: shift(c.sowDate), harvestDate: shift(c.harvestDate), endDate: shift(c.endDate) } });
+        await generateTasks(newCult);
     }
     res.json({ ok: true });
 });
@@ -239,22 +254,13 @@ app.get('/api/recipes/ranked', async (req, res) => {
 });
 
 app.get('/api/news', async (req, res) => res.json(await prisma.newsPost.findMany({ orderBy: { createdAt: 'desc' } })));
-
 app.post('/api/news', authenticateToken, isAdmin, async (req, res) => {
-    try {
-        const { title, content, imageUrl } = req.body;
-        const post = await prisma.newsPost.create({
-            data: { title, content, imageUrl }
-        });
-        res.status(201).json(post);
-    } catch (e) { res.status(500).json({ error: 'Fout bij aanmaken nieuwsbericht' }); }
+    const post = await prisma.newsPost.create({ data: req.body });
+    res.status(201).json(post);
 });
-
 app.delete('/api/news/:id', authenticateToken, isAdmin, async (req, res) => {
-    try {
-        await prisma.newsPost.delete({ where: { id: req.params.id } });
-        res.status(204).send();
-    } catch (e) { res.status(500).json({ error: 'Fout bij verwijderen nieuwsbericht' }); }
+    await prisma.newsPost.delete({ where: { id: req.params.id } });
+    res.status(204).send();
 });
 
 // --- Admin Member Management ---
@@ -262,41 +268,15 @@ app.get('/api/admin/members', authenticateToken, isAdmin, async (req, res) => {
     try {
         const activeYearSetting = await prisma.systemSetting.findUnique({ where: { key: 'active_year' } });
         const targetYear = activeYearSetting ? parseInt(activeYearSetting.value) : new Date().getFullYear();
-
-        const memberships = await prisma.membership.findMany({
-            where: { year: targetYear },
-            include: { 
-                user: { select: { id: true, name: true, email: true } },
-                familyMembers: true
-            }
-        });
-
-        const members = memberships.map(m => ({
-            id: m.id,
-            name: m.user.name,
-            email: m.user.email,
-            isMember: true,
-            hasPaid: m.isPaid,
-            totalFee: m.totalFee,
-            familyComposition: {
-                adults: m.familyMembers.filter(fm => fm.type === 'ADULT').length,
-                children: m.familyMembers.filter(fm => fm.type === 'CHILD').map(fm => ({ age: fm.age }))
-            },
-            registrationDate: m.createdAt
-        }));
-
+        const memberships = await prisma.membership.findMany({ where: { year: targetYear }, include: { user: { select: { id: true, name: true, email: true } }, familyMembers: true } });
+        const members = memberships.map(m => ({ id: m.id, name: m.user.name, email: m.user.email, isMember: true, hasPaid: m.isPaid, totalFee: m.totalFee, familyComposition: { adults: m.familyMembers.filter(fm => fm.type === 'ADULT').length, children: m.familyMembers.filter(fm => fm.type === 'CHILD').map(fm => ({ age: fm.age })) }, registrationDate: m.createdAt }));
         res.json(members);
     } catch (e) { res.status(500).json({ error: 'Fout bij ophalen deelnemers' }); }
 });
 
 app.patch('/api/admin/members/:id/payment', authenticateToken, isAdmin, async (req, res) => {
-    try {
-        const membership = await prisma.membership.update({
-            where: { id: req.params.id },
-            data: { isPaid: req.body.isPaid }
-        });
-        res.json(membership);
-    } catch (e) { res.status(500).json({ error: 'Fout bij bijwerken betaling' }); }
+    const membership = await prisma.membership.update({ where: { id: req.params.id }, data: { isPaid: req.body.isPaid } });
+    res.json(membership);
 });
 
 app.post('/api/login', async (req, res) => {
