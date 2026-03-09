@@ -161,7 +161,10 @@ app.post('/api/membership', authenticateToken, async (req: any, res) => {
         });
 
         res.json({ message: 'Inschrijving succesvol opgeslagen' });
-    } catch (e) { res.status(500).json({ error: 'Fout bij opslaan inschrijving' }); }
+    } catch (e) { 
+        console.error('Membership error:', e);
+        res.status(500).json({ error: 'Fout bij opslaan inschrijving', details: e instanceof Error ? e.message : String(e) }); 
+    }
 });
 
 // --- System Settings ---
