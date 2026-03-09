@@ -37,8 +37,13 @@ const authenticateToken = (req: any, res: any, next: any) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
   if (!token) return res.status(401).json({ error: 'Geen token' });
-  jwt.verify(token, JWT_SECRET, (err: any, user: any) => {
+  jwt.verify(token, JWT_SECRET, async (err: any, user: any) => {
     if (err) return res.status(403).json({ error: 'Foutieve token' });
+    
+    // Extra veiligheid: controleer of de gebruiker nog bestaat in de DB
+    const dbUser = await prisma.user.findUnique({ where: { id: user.id } });
+    if (!dbUser) return res.status(401).json({ error: 'Gebruiker niet meer geldig, log opnieuw in' });
+    
     req.user = user;
     next();
   });
