@@ -154,18 +154,18 @@ app.post('/api/membership', authenticateToken, async (req: any, res) => {
                 data: {
                     userId: req.user.id,
                     year: targetYear,
-                    totalFee: parseFloat(totalPrice.toString()),
+                    totalFee: Number(totalPrice ?? 0),
                     familyMembers: {
                         create: [
                             ...adults.map((a: any) => ({ 
                                 type: 'ADULT', 
                                 tier: (a.tier || 'STANDARD').toUpperCase(), 
-                                price: parseFloat(a.price.toString()) 
+                                price: Number(a.price ?? 0)
                             })),
                             ...children.map((c: any) => ({ 
                                 type: 'CHILD', 
-                                age: parseInt(c.age.toString()), 
-                                price: parseFloat(c.price.toString()) 
+                                age: Number(c.age ?? 0), 
+                                price: Number(c.price ?? 0)
                             }))
                         ]
                     }
