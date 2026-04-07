@@ -1,0 +1,21 @@
+#gs-field-grid {
+    margin-top: 20px;
+}
+
+.gs-grid-cell {
+    transition: background 0.2s;
+}
+
+.gs-grid-cell:hover {
+    background: #d4ecd4 !important;
+}
+
+#gs-block-modal {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#gs-block-modal > div {
+    max-width: 90%;
+}

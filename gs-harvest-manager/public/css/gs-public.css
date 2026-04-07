@@ -1,0 +1,177 @@
+.gs-harvest-map {
+    max-width: 1200px;
+    margin: 0 auto;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.gs-field-title {
+    font-size: 24px;
+    font-weight: 800;
+    margin: 40px 0 20px;
+    text-transform: uppercase;
+}
+
+.gs-block-card {
+    background: #fff;
+    border: 1px solid #eee;
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    min-height: 150px;
+}
+
+.gs-block-name {
+    font-weight: 800;
+    font-size: 14px;
+    color: #333;
+    margin-bottom: 10px;
+}
+
+.gs-harvest-badge {
+    background: #e6f7e6;
+    color: #2e7d32;
+    font-size: 10px;
+    font-weight: 800;
+    padding: 4px 8px;
+    border-radius: 6px;
+    margin-bottom: 10px;
+    display: inline-block;
+}
+
+.gs-crops-list {
+    font-size: 12px;
+}
+
+.gs-crop-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 4px;
+}
+
+.gs-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+}
+
+.status-oogstklaar .gs-dot { background: #4caf50; }
+.status-oogstklaar { color: #2e7d32; font-weight: 700; }
+
+.status-groeiend .gs-dot { background: #ffc107; }
+.status-groeiend { color: #666; }
+
+.status-gepland .gs-dot { background: #ddd; }
+.status-gepland { color: #aaa; }
+
+.empty-cell {
+    border: 2px dashed #eee;
+    background: #fcfcfc;
+}
+
+/* Recipes Styling */
+.gs-filters {
+    margin-bottom: 20px;
+    display: flex;
+    gap: 10px;
+}
+
+.gs-btn {
+    padding: 10px 20px;
+    border-radius: 30px;
+    border: 1px solid #ccc;
+    background: #fff;
+    cursor: pointer;
+    font-weight: 700;
+}
+
+.gs-btn.active {
+    background: #2e7d32;
+    color: #fff;
+    border-color: #2e7d32;
+}
+
+.gs-recipes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.gs-recipe-card {
+    background: #fff;
+    border: 1px solid #eee;
+    border-radius: 20px;
+    padding: 25px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+.gs-recipe-title {
+    font-size: 18px;
+    font-weight: 800;
+    margin-bottom: 10px;
+}
+
+.gs-recipe-content {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 20px;
+    line-height: 1.6;
+}
+
+.gs-recipe-link {
+    margin-top: auto;
+    font-weight: 800;
+    color: #2e7d32;
+    text-decoration: none;
+    text-transform: uppercase;
+    font-size: 12px;
+}
+
+.gs-recipe-card.is-harvestable {
+    border: 2px solid #4caf50;
+}
+
+.gs-recipe-btn {
+    background: #2e7d32;
+    color: #fff;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    font-size: 11px;
+    cursor: pointer;
+    margin-top: auto;
+}
+
+.gs-modal-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.7);
+    display: flex; justify-content: center; align-items: center;
+    z-index: 9999;
+}
+
+.gs-modal-content {
+    background: #fff;
+    padding: 40px;
+    border-radius: 30px;
+    max-width: 700px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    position: relative;
+}
+
+.gs-modal-close {
+    position: absolute;
+    top: 20px; right: 20px;
+    border: none; background: none; font-size: 30px; cursor: pointer;
+}
+
+.gs-modal-title { font-weight: 900; margin-bottom: 5px; }
+.gs-modal-author { font-style: italic; color: #888; margin-bottom: 20px; font-size: 14px; }
+.gs-modal-body { line-height: 1.8; color: #444; }
