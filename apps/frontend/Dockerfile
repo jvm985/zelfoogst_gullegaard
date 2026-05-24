@@ -20,15 +20,20 @@ FROM nginx:alpine
 COPY --from=builder /app/apps/frontend/dist /usr/share/nginx/html
 
 # SPA configuration for Nginx
+# Docker's embedded DNS resolver (127.0.0.11) lets nginx re-resolve `backend`
+# at runtime, so recreating the backend container (new IP) doesn't require
+# a frontend restart.
 RUN echo 'server { \
     listen 80; \
+    resolver 127.0.0.11 valid=10s ipv6=off; \
     location / { \
         root /usr/share/nginx/html; \
         index index.html index.htm; \
         try_files $uri $uri/ /index.html; \
     } \
     location /api { \
-        proxy_pass http://backend:3000; \
+        set $upstream_backend backend:3000; \
+        proxy_pass http://$upstream_backend; \
     } \
 }' > /etc/nginx/conf.d/default.conf
 
