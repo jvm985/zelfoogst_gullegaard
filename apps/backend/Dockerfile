@@ -28,4 +28,8 @@ EXPOSE 3000
 
 # Start the app from the backend directory
 WORKDIR /app/apps/backend
+
+# Draai als non-root (security-hardening). De app houdt state in Postgres en
+# schrijft niets lokaal, dus de root-owned (world-readable) app-files volstaan.
+USER node
 CMD ["node", "dist/index.js"]
